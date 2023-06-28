@@ -1,3 +1,0 @@
-Right now the user is able to type into the saved sequences box when they first start the program, which should be disabled by default. Also the scroll bar is on by default, even when there is no overflow. It should toggle on when there is overflow to justify it. Also there should be no scroll bar in the sequence label so i removed it. 
-
-Also the copied text should retain its colors when you copy it. 
