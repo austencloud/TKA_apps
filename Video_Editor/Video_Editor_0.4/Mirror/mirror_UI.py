@@ -1,14 +1,13 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QProgressBar, QFileDialog, QSlider
-from PyQt5.QtCore import pyqtSignal, Qt, QThread
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, Qt
+from .mirror_thread import MirrorThread
 import os
-from moviepy.editor import VideoFileClip, vfx
 
-class KaleidoscopeTab(QWidget):
+class MirrorTab(QWidget):
     def __init__(self, parent=None):
-        super(KaleidoscopeTab, self).__init__(parent)
+        super(MirrorTab, self).__init__(parent)
         
         self.setWindowTitle("PyQt Video Player")
 
@@ -49,7 +48,9 @@ class KaleidoscopeTab(QWidget):
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
         self.mediaPlayer.mediaStatusChanged.connect(self.media_status_changed)
+
         self.worker = None
+
 
     def open_file(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
@@ -77,18 +78,21 @@ class KaleidoscopeTab(QWidget):
         self.worker.result_ready.connect(self.finalize_mirror)
         self.worker.start()
 
-        self.progressBar.setRange(0, 100)  # Determine mode
+        self.progressBar.setRange(0, 100)  # Percent mode
         self.progressBar.show()  # Show the progress bar
+
 
     def update_progress_bar(self, progress):
         self.progressBar.setValue(progress)
 
     def finalize_mirror(self, processed_filename):
-        self.progressBar.hide()
+        self.progressBar.hide()  # Hide the progress bar
         url = QUrl.fromUserInput(os.path.abspath(processed_filename))
         self.mediaPlayer.setMedia(QMediaContent(url))
         self.playButton.setEnabled(True)
         self.mirrorButton.setEnabled(True)
+        self.progressBar.setRange(0, 0)  # Reset to indeterminate mode
+
 
     def play_pause(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -122,32 +126,3 @@ class KaleidoscopeTab(QWidget):
 
     def set_position(self, position):
         self.mediaPlayer.setPosition(position)
-
-class MirrorThread(QThread):   
-    progress_update = pyqtSignal(int)
-    result_ready = pyqtSignal(str)
-
-    def __init__(self, source_file, destination_file):
-        super().__init__()
-
-        self.source_file = source_file
-        self.destination_file = destination_file
-        self.process = None
-
-    def run(self):
-        # Read the video and get individual frames
-        clip = VideoFileClip(self.source_file)
-
-        # Process each frame to apply the mirroring effect
-        modified_clip = clip.fx(vfx.mirror_x).fx(vfx.mirror_y)
-
-        # Provide feedback about the progress
-        duration = clip.duration
-        for t in modified_clip.iter_timesteps():
-            progress = int((t / duration) * 100)
-            self.progress_update.emit(progress)
-
-        # Write the processed frames back to a new video
-        modified_clip.write_videofile(self.destination_file, codec='libx264')
-
-        self.result_ready.emit(self.destination_file)

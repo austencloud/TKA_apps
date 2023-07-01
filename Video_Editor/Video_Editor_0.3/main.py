@@ -4,14 +4,14 @@ import logging
 from PyQt5.QtWidgets import QMainWindow, QTabWidget
 from PyQt5.QtCore import pyqtSignal
 from kaleidoscope import KaleidoscopeTab
-from merge_files import MergeFilesTab
+from merge_tab import MergeFilesTab
 
 class MainWindow(QMainWindow):
     progress_signal = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Multifunctional Application")
+        self.setWindowTitle("Video Editor 0.3")
         self.resize(600, 600)
         self.tab_widget = QTabWidget()
         self.setCentralWidget(self.tab_widget)
