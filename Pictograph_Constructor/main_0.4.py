@@ -152,6 +152,7 @@ class Drag(QGraphicsPixmapItem):
         if event.button() == Qt.LeftButton:
             self.setVisible(False)  # hide original item
             views = self.scene().views()
+            
             if views:
                 if self.drag_start_position is None:  # this is for dragging copied items
                     self.drag_start_position = event.pos() - self.boundingRect().topLeft()
@@ -184,7 +185,7 @@ class Drag(QGraphicsPixmapItem):
             super().paint(painter, option, widget)
 
 
-class DraggableLabel(QLabel):
+class NewArrow(QLabel):
     def __init__(self, svg_path: str, parent=None):
         super().__init__(parent)
         self.svg_path = svg_path
@@ -243,7 +244,7 @@ class DropFrame(QGraphicsView):
             pixmap = QPixmap.fromImage(image)
 
             id_text = event.mimeData().text()
-            if ',' in id_text:  # DraggableLabel
+            if ',' in id_text:  # NewArrow
                 svg_path = event.mimeData().data('application/x-qabstractitemmodeldatalist').data().decode()
                 item = Drag(svg_path)
                 if item.drag_start_position is None:
