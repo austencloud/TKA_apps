@@ -3,132 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsPixmapItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, QMimeData, QPointF, QThread, pyqtSignal, QTimer, QByteArray
-from PyQt5.QtSvg import QSvgRenderer, QSvgWidget
-
-
-
-class Drag(QGraphicsPixmapItem):
-    id_counter = 0
-
-    def __init__(self, svg_path: str):
-        self.svg_path = svg_path
-        self.svg_renderer = QSvgRenderer(svg_path)
-        self.highlighted_svg_renderer = QSvgRenderer(svg_path)
-
-        original_size = self.svg_renderer.defaultSize()
-        scale_factor = min(200 / original_size.width(), 200 / original_size.height())
-
-        # Create the original pixmap
-        image = QImage(int(original_size.width() * scale_factor), int(original_size.height() * scale_factor), QImage.Format_ARGB32)
-        painter = QPainter(image)
-        self.svg_renderer.render(painter)
-        painter.end()
-        pixmap = QPixmap.fromImage(image)
-        super().__init__(pixmap)
-
-
-        # Create the highlighted pixmap
-        highlighted_image = QImage(200, 200, QImage.Format_ARGB32)
-        highlighted_painter = QPainter(highlighted_image)
-        self.highlighted_svg_renderer.render(highlighted_painter)
-        highlighted_painter.end()  # <-- End the highlighted painter's session
-        self.highlighted_pixmap = QPixmap.fromImage(highlighted_image)
-        super().__init__(pixmap)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.id = Drag.id_counter
-        Drag.id_counter += 1
-        self.drag_start_position = None
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.setVisible(False)  # hide original item
-            views = self.scene().views()
-            if views:
-                if self.drag_start_position is None:  # this is for dragging copied items
-                    self.drag_start_position = event.pos() - self.boundingRect().topLeft()
-                
-                drag = QDrag(views[0])  # Use the first QGraphicsView as the parent
-                drag.setHotSpot(self.drag_start_position.toPoint())
-                mimedata = QMimeData()
-
-                pixmap = self.pixmap()
-                mimedata.setImageData(pixmap.toImage())
-                mimedata.setText(str(self.id))
-
-                drag.setMimeData(mimedata)
-
-                pixmap_scaled = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                drag.setPixmap(pixmap_scaled)
-
-                self.drag_start_position = event.pos() - self.boundingRect().topLeft()
-                drag.setHotSpot(self.drag_start_position.toPoint())
-
-                drag.exec_(Qt.CopyAction)  # Execute the drag action
-            else:
-                return  # Do nothing if there are no views
-            
-
-    def paint(self, painter, option, widget):
-        if self.isSelected():
-            painter.drawPixmap(self.boundingRect(), self.highlighted_pixmap, self.boundingRect())
-        else:
-            super().paint(painter, option, widget)
-
-
-
-class DropFrame(QGraphicsView):
-    def __init__(self, scene: QGraphicsScene, parent=None):
-        super().__init__(scene, parent)
-        self.setDragMode(QGraphicsView.NoDrag)
-        self.setAcceptDrops(True)
-
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasImage():
-            event.acceptProposedAction()
-
-    def dragMoveEvent(self, event):
-        if event.mimeData().hasImage():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        if event.mimeData().hasImage():
-            event.setDropAction(Qt.CopyAction)
-            event.accept()
-            image = QImage(event.mimeData().imageData())
-            pixmap = QPixmap.fromImage(image)
-
-            id_text = event.mimeData().text()
-            if ',' in id_text:  # DraggableLabel
-                svg_path = event.mimeData().data('application/x-qabstractitemmodeldatalist').data().decode()
-                item = Drag(svg_path)
-                if item.drag_start_position is None:
-                    item.drag_start_position = QPointF(0, 0)
-                pos = self.mapToScene(event.pos()) - item.drag_start_position
-                item.setPos(pos)
-                self.scene().addItem(item)
-            if id_text.isdigit():  # Drag
-                item_id = int(id_text)
-                for item in self.scene().items():
-                    if isinstance(item, Drag) and item.id == item_id:
-                        pos = self.mapToScene(event.pos()) - item.drag_start_position
-                        item.setPos(pos)  # Move the existing item
-                        item.setVisible(True)  # unhide original item
-                        break
-        else:
-            event.ignore()
-
-    def mousePressEvent(self, event):
-        # find the item that we clicked
-        items = self.items(event.pos())
-        if items:
-            # if we clicked on an item, select it
-            item = items[0]
-            item.setSelected(True)
-        else:
-            # if we didn't click on an item, clear the selection
-            for item in self.scene().selectedItems():
-                item.setSelected(False)
+from PyQt5.QtSvg import QSvgRenderer, QSvgWidget, QGraphicsSvgItem
 
 class MainApp(QWidget):
     def __init__(self):
@@ -160,10 +35,11 @@ class MainApp(QWidget):
         self.view = DropFrame(self.scene)
 
         # in your Example.initUI() method, after initializing self.scene
-        grid_pixmap = QPixmap('D:\\CODE\\TKA_Apps\\Pictograph_Constructor\\images\\grids\\grid.png')
-        grid_item = QGraphicsPixmapItem(grid_pixmap)
+        grid_svg = 'D:\\\\CODE\\\\TKA_Apps\\\\Pictograph_Constructor\\\\images\\\\svgs\\\\grid\\\\grid.svg'
+        grid_item = QGraphicsSvgItem(grid_svg)
+        grid_item.setZValue(1)
+        grid_item.setScale(8.0)
         self.scene.addItem(grid_item)
-
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.view)
@@ -239,6 +115,75 @@ class MainApp(QWidget):
         image.save("export.png")
 
 
+class Drag(QGraphicsPixmapItem):
+    id_counter = 0
+
+    def __init__(self, svg_path: str):
+        self.svg_path = svg_path
+        self.svg_renderer = QSvgRenderer(svg_path)
+        self.highlighted_svg_renderer = QSvgRenderer(svg_path)
+
+        original_size = self.svg_renderer.defaultSize()
+        scale_factor = min(200 / original_size.width(), 200 / original_size.height())
+
+        # Create the original pixmap
+        image = QImage(int(original_size.width() * scale_factor), int(original_size.height() * scale_factor), QImage.Format_ARGB32)
+        painter = QPainter(image)
+        self.svg_renderer.render(painter)
+        painter.end()
+        pixmap = QPixmap.fromImage(image)
+        super().__init__(pixmap)
+
+
+        # Create the highlighted pixmap
+        highlighted_image = QImage(200, 200, QImage.Format_ARGB32)
+        highlighted_painter = QPainter(highlighted_image)
+        self.highlighted_svg_renderer.render(highlighted_painter)
+        highlighted_painter.end()  # <-- End the highlighted painter's session
+        self.highlighted_pixmap = QPixmap.fromImage(highlighted_image)
+        super().__init__(pixmap)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.id = Drag.id_counter
+        Drag.id_counter += 1
+        self.drag_start_position = None
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setVisible(False)  # hide original item
+            views = self.scene().views()
+            if views:
+                if self.drag_start_position is None:  # this is for dragging copied items
+                    self.drag_start_position = event.pos() - self.boundingRect().topLeft()
+                
+                drag = QDrag(views[0])  # Use the first QGraphicsView as the parent
+                drag.setHotSpot(self.drag_start_position.toPoint())
+                mimedata = QMimeData()
+
+                pixmap = self.pixmap()
+                mimedata.setImageData(pixmap.toImage())
+                mimedata.setText(str(self.id))
+
+                drag.setMimeData(mimedata)
+
+                pixmap_scaled = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                drag.setPixmap(pixmap_scaled)
+
+                self.drag_start_position = event.pos() - self.boundingRect().topLeft()
+                drag.setHotSpot(self.drag_start_position.toPoint())
+
+                drag.exec_(Qt.CopyAction)  # Execute the drag action
+            else:
+                return  # Do nothing if there are no views
+            
+
+    def paint(self, painter, option, widget):
+        if self.isSelected():
+            painter.drawPixmap(self.boundingRect(), self.highlighted_pixmap, self.boundingRect())
+        else:
+            super().paint(painter, option, widget)
+
+
 class DraggableLabel(QLabel):
     def __init__(self, svg_path: str, parent=None):
         super().__init__(parent)
@@ -273,6 +218,61 @@ class DraggableLabel(QLabel):
 
             drag.exec_(Qt.CopyAction)
             self.setVisible(True)
+
+
+
+class DropFrame(QGraphicsView):
+    def __init__(self, scene: QGraphicsScene, parent=None):
+        super().__init__(scene, parent)
+        self.setDragMode(QGraphicsView.NoDrag)
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasImage():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasImage():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasImage():
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+            image = QImage(event.mimeData().imageData())
+            pixmap = QPixmap.fromImage(image)
+
+            id_text = event.mimeData().text()
+            if ',' in id_text:  # DraggableLabel
+                svg_path = event.mimeData().data('application/x-qabstractitemmodeldatalist').data().decode()
+                item = Drag(svg_path)
+                if item.drag_start_position is None:
+                    item.drag_start_position = QPointF(0, 0)
+                pos = self.mapToScene(event.pos()) - item.drag_start_position
+                item.setPos(pos)
+                self.scene().addItem(item)
+            if id_text.isdigit():  # Drag
+                item_id = int(id_text)
+                for item in self.scene().items():
+                    if isinstance(item, Drag) and item.id == item_id:
+                        pos = self.mapToScene(event.pos()) - item.drag_start_position
+                        item.setPos(pos)  # Move the existing item
+                        item.setVisible(True)  # unhide original item
+                        break
+        else:
+            event.ignore()
+
+    def mousePressEvent(self, event):
+        # find the item that we clicked
+        items = self.items(event.pos())
+        if items:
+            # if we clicked on an item, select it
+            item = items[0]
+            item.setSelected(True)
+        else:
+            # if we didn't click on an item, clear the selection
+            for item in self.scene().selectedItems():
+                item.setSelected(False)
 
 
 
