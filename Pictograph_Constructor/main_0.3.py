@@ -1,21 +1,21 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsPixmapItem, QGraphicsView, QPushButton, QGraphicsItem
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsPixmapItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QColor
 from PyQt5.QtCore import Qt, QMimeData, QByteArray, QBuffer, QIODevice, QPointF, QPoint
 
 
 
 
-class DraggablePixmapItem(QGraphicsPixmapItem):
+class DraggableObject(QGraphicsPixmapItem):
     id_counter = 0
 
     def __init__(self, pixmap: QPixmap):
-        super().__init__(pixmap)
+        super().__init__(pixmap)  # this will correctly initialize the pixmap
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.id = DraggablePixmapItem.id_counter
-        DraggablePixmapItem.id_counter += 1
+        self.id = DraggableObject.id_counter
+        DraggableObject.id_counter += 1
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -39,7 +39,7 @@ class DraggablePixmapItem(QGraphicsPixmapItem):
             drag.exec_(Qt.CopyAction)
         super().mousePressEvent(event)
 
-class CustomGraphicsView(QGraphicsView):
+class DropFrame(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent=None):
         super().__init__(scene, parent)
         self.setDragMode(QGraphicsView.NoDrag)
@@ -69,13 +69,13 @@ class CustomGraphicsView(QGraphicsView):
                 # If there's an id, find the item in the scene and move it
                 item_id = int(id_text)
                 for item in self.scene().items():
-                    if isinstance(item, DraggablePixmapItem) and item.id == item_id:
+                    if isinstance(item, DraggableObject) and item.id == item_id:
                         pos = self.mapToScene(event.pos()) - item.drag_start_offset  # Adjust for the offset
                         item.setPos(pos)
                         break
             else:
                 # If there's no id, this is a new item, so add it to the scene
-                item = DraggablePixmapItem(pixmap)
+                item = DraggableObject(pixmap)
                 item.drag_start_offset = QPointF(pixmap.width() / 2, pixmap.height() / 2)  # Center of the pixmap
                 pos = self.mapToScene(event.pos()) - item.drag_start_offset  # Adjust for the offset
                 item.setPos(pos)
@@ -85,7 +85,7 @@ class CustomGraphicsView(QGraphicsView):
 
 
 
-class Example(QWidget):
+class MainApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -116,7 +116,7 @@ class Example(QWidget):
         hbox.addWidget(scroll_area)
 
         self.scene = QGraphicsScene()
-        self.view = CustomGraphicsView(self.scene)
+        self.view = DropFrame(self.scene)
 
         # in your Example.initUI() method, after initializing self.scene
         grid_pixmap = QPixmap('D:\\CODE\\TKA_Apps\\Pictograph_Constructor\\images\\grids\\grid.png')
@@ -195,6 +195,6 @@ class DraggableLabel(QLabel):
 
 
 app = QApplication(sys.argv)
-ex = Example()
+ex = MainApp()
 ex.setFocus()  
 sys.exit(app.exec_())
