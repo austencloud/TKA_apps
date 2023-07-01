@@ -36,7 +36,7 @@ class MainApp(QWidget):
 
         # in your Example.initUI() method, after initializing self.scene
         grid_svg = 'D:\\\\CODE\\\\TKA_Apps\\\\Pictograph_Constructor\\\\images\\\\svgs\\\\grid\\\\grid.svg'
-        grid_item = QGraphicsSvgItem(grid_svg)
+        grid_item = DraggableSvg(grid_svg)
         grid_item.setZValue(1)
         grid_item.setScale(8.0)
         self.scene.addItem(grid_item)
@@ -114,6 +114,34 @@ class MainApp(QWidget):
         # Save the QImage to a file
         image.save("export.png")
 
+class DraggableSvg(QGraphicsSvgItem):
+    def __init__(self, svg_path: str):
+        super().__init__(svg_path)
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.drag_start_position = event.pos()
+            self.setCursor(Qt.ClosedHandCursor)
+
+    def mouseMoveEvent(self, event):
+        if not event.buttons() & Qt.LeftButton:
+            return
+        if not (event.pos() - self.drag_start_position).manhattanLength() > QApplication.startDragDistance():
+            return
+        drag = QDrag(self)
+        mimedata = QMimeData()
+        mimedata.setText(self.elementId())
+        drag.setMimeData(mimedata)
+        pixmap = QPixmap(self.boundingRect().size().toSize())
+        self.render(QPainter(pixmap))
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(event.pos().toPoint())
+        drag.exec_()
+
+    def mouseReleaseEvent(self, event):
+        self.setCursor(Qt.OpenHandCursor)
 
 class Drag(QGraphicsPixmapItem):
     id_counter = 0
@@ -237,11 +265,13 @@ class DropFrame(QGraphicsView):
             event.acceptProposedAction()
 
     def dropEvent(self, event):
-        if event.mimeData().hasImage():
-            event.setDropAction(Qt.CopyAction)
-            event.accept()
-            image = QImage(event.mimeData().imageData())
-            pixmap = QPixmap.fromImage(image)
+        if event.mimeData().hasText():
+            svg_id = event.mimeData().text()
+            for item in self.scene().items():
+                if isinstance(item, DraggableSvg) and item.elementId() == svg_id:
+                    item.setPos(self.mapToScene(event.pos()))
+                    break
+
 
             id_text = event.mimeData().text()
             if ',' in id_text:  # NewArrow
