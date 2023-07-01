@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsPixmapItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, QMimeData, QPointF, QThread, pyqtSignal, QTimer, QByteArray
-from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtSvg import QSvgRenderer, QSvgWidget
 
 
 
@@ -150,12 +150,13 @@ class MainApp(QWidget):
         scroll_layout = QVBoxLayout()
 
         for svg in svgs:
-            lbl = DraggableLabel(svg)
-            lbl.show()
-            lbl.setParent(scroll_widget)
-            scroll_layout.addWidget(lbl)
+            svg_widget = QSvgWidget(svg)
+            scroll_layout.addWidget(svg_widget)
 
-        scroll_layout.addStretch()
+        svg_widget = QSvgWidget(svg)
+        svg_widget.setFixedSize(100, 100)  # Adjust the size as needed
+        scroll_layout.addWidget(svg_widget)
+
         scroll_widget.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_widget)
         scroll_area.setWidgetResizable(True)
