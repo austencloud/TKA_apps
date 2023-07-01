@@ -130,9 +130,6 @@ class DropFrame(QGraphicsView):
             for item in self.scene().selectedItems():
                 item.setSelected(False)
 
-
-
-
 class MainApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -151,11 +148,8 @@ class MainApp(QWidget):
 
         for svg in svgs:
             svg_widget = QSvgWidget(svg)
+            svg_widget.setFixedSize(200, 200)  # Set a fixed size for the SVG widget
             scroll_layout.addWidget(svg_widget)
-
-        svg_widget = QSvgWidget(svg)
-        svg_widget.setFixedSize(100, 100)  # Adjust the size as needed
-        scroll_layout.addWidget(svg_widget)
 
         scroll_widget.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_widget)
