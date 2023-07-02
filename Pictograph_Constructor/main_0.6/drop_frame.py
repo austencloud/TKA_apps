@@ -58,6 +58,7 @@ class Drop_Frame(QGraphicsView):
         else:
             for item in self.scene().selectedItems():
                 item.setSelected(False)
+            self.dragging = None    
 
     def mouseMoveEvent(self, event):
         if self.dragging:
@@ -127,7 +128,9 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
                 Drop_Frame_Objects.exec_(Qt.CopyAction)  # Execute the Drop_Frame_Objects action
             else:
                 return  # Do nothing if there are no views
-            
+                items = self.items(event.pos())
+                
+
 
     def paint(self, painter, option, widget):
         super().paint(painter, option, widget)

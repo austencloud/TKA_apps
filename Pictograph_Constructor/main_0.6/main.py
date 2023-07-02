@@ -92,19 +92,15 @@ class MainApp(QWidget):
             svg_item = Objects_From_Sidebar(svg)
             svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
             svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
-
             # Scale the SVG item
             svg_item.setScale(8.0)  # Adjust this value as needed
-
             # Position the SVG item
             svg_item.setPos(0, i * 200)  # Adjust the y-coordinate as needed
-
             # Add the arrows to the scroll_scene instead of self.scene
             scroll_scene.addItem(svg_item)
 
         # Use scroll_scene for the QGraphicsView in the scroll area
         view = QGraphicsView(scroll_scene)
-
         # Add the QGraphicsView to the layout
         scroll_layout.addWidget(view)
 
@@ -117,9 +113,6 @@ class MainApp(QWidget):
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.view)
-
-        # ... rest of the method ...
-
 
         self.deleteButton = QPushButton("Delete Selected")
         self.deleteButton.clicked.connect(self.deleteSelected)
@@ -162,7 +155,8 @@ class MainApp(QWidget):
     def mirrorSelected(self, horizontal=True):
         for item in self.scene.selectedItems():
             if horizontal:
-                item.setScale(-item.scale() if item.scale() < 0 else -1)  # Flip horizontally
+                # Flip horizontally by applying a horizontal flip matrix
+                item.setTransform(item.transform().scale(-1, 1))
             else:
                 # Flip vertically by applying a vertical flip matrix
                 item.setTransform(item.transform().scale(1, -1))
@@ -170,10 +164,6 @@ class MainApp(QWidget):
     def deleteSelected(self):
         for item in self.scene.selectedItems():
             self.scene.removeItem(item)
-
-    def rotateSelected(self, angle):
-        for item in self.scene.selectedItems():
-            item.setRotation(item.rotation() + angle)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
@@ -190,7 +180,6 @@ class MainApp(QWidget):
 
         # Save the QImage to a file
         image.save("export.png")
-
 
 app = QApplication(sys.argv)
 ex = MainApp()
