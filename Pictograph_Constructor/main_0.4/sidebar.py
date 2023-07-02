@@ -11,6 +11,10 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         self.svg_file = svg_file
         self.in_drop_frame = False
 
+        if "grid" not in svg_file:
+            self.setFlag(QGraphicsSvgItem.ItemIsMovable, True)
+            self.setFlag(QGraphicsSvgItem.ItemIsSelectable, True)
+
     def mousePressEvent(self, event):
         self.dragOffset = event.pos()
         if self.in_drop_frame:

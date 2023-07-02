@@ -34,12 +34,11 @@ class Drop_Frame(QGraphicsView):
             svg_file = event.mimeData().text()
 
             # Create a new DraggableSvg item
-            svg_item = Objects_From_Sidebar(svg_file)
+            if "grid" in svg_file:
+                svg_item = Grid(svg_file)
+            else:
+                svg_item = Objects_From_Sidebar(svg_file)
 
-            if not isinstance(svg_item, Grid):
-                svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
-                svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
-                svg_item.in_drop_frame = True
             svg_item.setScale(8.0)
 
             # Add the new DraggableSvg item to the scene at the drop location
