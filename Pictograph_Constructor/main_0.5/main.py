@@ -1,17 +1,23 @@
 import os
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
-from PyQt5.QtGui import QImage, QPainter
+from PyQt5.QtGui import QImage, QPainter, QBrush, QPen, QColor
 from PyQt5.QtCore import Qt, QPointF
 from sidebar import Objects_From_Sidebar
 from drop_frame import Drop_Frame, Grid
 import xml.etree.ElementTree as ET
 from PyQt5.QtWidgets import QGraphicsEllipseItem
 
-class CircleItem(QGraphicsEllipseItem):
+class Make_Circle(QGraphicsEllipseItem):
     def __init__(self, center, radius, parent=None):
         super().__init__(parent)
         self.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
+
+        # Set the brush to solid black
+        self.setBrush(QBrush(QColor(0, 0, 0)))
+
+        # Set the pen to no pen (i.e., no stroke)
+        self.setPen(QPen(Qt.NoPen))
 
 
 class MainApp(QWidget):
@@ -20,7 +26,7 @@ class MainApp(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setGeometry(300, 300, 1400, 1000)  
+        self.setGeometry(300, 300, 1800, 1400)  
 
         hbox = QHBoxLayout()
         svg_dir = 'images\\arrows'
@@ -32,7 +38,8 @@ class MainApp(QWidget):
 
         # Create a QGraphicsScene
         self.scene = QGraphicsScene()
-
+        # Create a new QGraphicsScene for the QGraphicsView in the scroll area
+        scroll_scene = QGraphicsScene()
         # Parse the SVG file
         tree = ET.parse('images\\grid\\grid.svg')
         root = tree.getroot()
@@ -50,7 +57,16 @@ class MainApp(QWidget):
             radius = float(circle.get('r'))
 
             # Create a CircleItem
-            item = CircleItem(center, radius)
+            item = Make_Circle(center, radius)
+
+            # Scale the item
+            item.setScale(8.0)  
+            # Set the Z value of the item to -1
+            item.setZValue(-1)
+
+            # Add the item to the scene
+            self.scene.addItem(item)
+
 
             # Add the item to the scene
             self.scene.addItem(item)
@@ -62,7 +78,7 @@ class MainApp(QWidget):
         brush = QBrush(QColor(255, 0, 0))  # Red brush
 
         # Create a CircleItem
-        item = CircleItem(center, radius)
+        item = Make_Circle(center, radius)
 
         # Set the item's pen and brush
         item.setPen(pen)
@@ -83,11 +99,11 @@ class MainApp(QWidget):
             # Position the SVG item
             svg_item.setPos(0, i * 200)  # Adjust the y-coordinate as needed
 
-            # Add the DraggableSvg instance to the scene
-            self.scene.addItem(svg_item)
+            # Add the arrows to the scroll_scene instead of self.scene
+            scroll_scene.addItem(svg_item)
 
-        # Create a QGraphicsView to display the scene
-        view = QGraphicsView(self.scene)
+        # Use scroll_scene for the QGraphicsView in the scroll area
+        view = QGraphicsView(scroll_scene)
 
         # Add the QGraphicsView to the layout
         scroll_layout.addWidget(view)
