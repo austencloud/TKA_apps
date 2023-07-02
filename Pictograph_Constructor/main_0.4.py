@@ -164,7 +164,12 @@ class DraggableSvg(QGraphicsSvgItem):
 
         # Use the renderer's render method
         self.renderer().render(painter)
+
+        # End the QPainter
+        painter.end()
+
         drag.setPixmap(pixmap)
+
 
         drag.exec_(Qt.CopyAction | Qt.MoveAction)
 
@@ -306,6 +311,7 @@ class DropFrame(QGraphicsView):
             svg_item = DraggableSvg(svg_file)
             svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
             svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+            svg_item.setScale(8.0)
 
             # Add the new DraggableSvg item to the scene at the drop location
             self.scene().addItem(svg_item)
