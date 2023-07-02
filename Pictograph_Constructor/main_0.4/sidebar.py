@@ -1,8 +1,5 @@
-
-import os
-import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsPixmapItem
-from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter
+from PyQt5.QtWidgets import QApplication, QLabel
+from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath
 from PyQt5.QtCore import Qt, QMimeData, QPointF, QByteArray
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 
@@ -35,8 +32,10 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
             # Set the file path of the SVG file in the MIME data
             mime_data.setText(self.svg_file)
 
-            Drop_Frame_Objects.setMimeData(mime_data)
-            Drop_Frame_Objects.setHotSpot(event.pos().toPoint())
+            # Create a QDrag object
+            drag = QDrag(self)
+            drag.setMimeData(mime_data)
+            drag.setHotSpot(event.pos().toPoint())
 
             pixmap = QPixmap(self.boundingRect().size().toSize() * 8)
             painter = QPainter(pixmap)
@@ -47,15 +46,19 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
             # End the QPainter
             painter.end()
 
-            Drop_Frame_Objects.setPixmap(pixmap)
+            drag.setPixmap(pixmap)
 
+            drag.exec_(Qt.CopyAction | Qt.MoveAction)
 
-            Drop_Frame_Objects.exec_(Qt.CopyAction | Qt.MoveAction)
 
     def mouseReleaseEvent(self, event):
         self.setCursor(Qt.OpenHandCursor)
 
-
+    def shape(self):
+        path = QPainterPath()
+        path.addRect(self.renderer().boundsOnElement(self.elementId()))
+        return path
+    
 class NewArrow(QLabel):
     def __init__(self, svg_path: str, parent=None):
         super().__init__(parent)

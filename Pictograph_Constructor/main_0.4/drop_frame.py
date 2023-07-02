@@ -1,6 +1,6 @@
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsPixmapItem
-from PyQt5.QtGui import QPixmap, QImage, QPainter
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer
 from sidebar import Objects_From_Sidebar
@@ -122,7 +122,9 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
             
 
     def paint(self, painter, option, widget):
+        super().paint(painter, option, widget)
+
         if self.isSelected():
-            painter.drawPixmap(self.boundingRect(), self.highlighted_pixmap, self.boundingRect())
-        else:
-            super().paint(painter, option, widget)
+            pen = QPen(Qt.red, 3, Qt.DashDotLine)
+            painter.setPen(pen)
+            painter.drawRect(self.boundingRect())
