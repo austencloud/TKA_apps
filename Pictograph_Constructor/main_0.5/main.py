@@ -55,6 +55,22 @@ class MainApp(QWidget):
             # Add the item to the scene
             self.scene.addItem(item)
 
+        from PyQt5.QtGui import QPen, QBrush, QColor
+
+        # Create a pen and brush
+        pen = QPen(QColor(0, 0, 0))  # Black pen
+        brush = QBrush(QColor(255, 0, 0))  # Red brush
+
+        # Create a CircleItem
+        item = CircleItem(center, radius)
+
+        # Set the item's pen and brush
+        item.setPen(pen)
+        item.setBrush(brush)
+
+        # Add the item to the scene
+        self.scene.addItem(item)
+
         for i, svg in enumerate(svgs):
             # Create a DraggableSvg instance
             svg_item = Objects_From_Sidebar(svg)

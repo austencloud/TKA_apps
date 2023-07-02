@@ -49,9 +49,7 @@ class Drop_Frame(QGraphicsView):
 
 
     def mousePressEvent(self, event):
-        color = self.pixmap().toImage().pixelColor(event.pos())
-        if color == Qt.black:
-            print(self.svg_file)
+
         items = self.items(event.pos())
         if items and items[0].flags() & QGraphicsItem.ItemIsMovable:
             self.dragging = items[0]
