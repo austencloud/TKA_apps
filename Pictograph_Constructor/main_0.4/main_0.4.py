@@ -4,8 +4,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVB
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import Qt
 from sidebar import Objects_From_Sidebar
-from PyQt5.QtSvg import QGraphicsSvgItem
-from drop_frame import Drop_Frame
+from drop_frame import Drop_Frame, Grid
 
 
 class MainApp(QWidget):
@@ -136,12 +135,6 @@ class MainApp(QWidget):
 
         # Save the QImage to a file
         image.save("export.png")
-
-class Grid(QGraphicsSvgItem):
-    def __init__(self, svg_file):
-        super().__init__(svg_file)
-        self.setFlag(QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
 
 
 app = QApplication(sys.argv)

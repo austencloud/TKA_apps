@@ -2,9 +2,8 @@
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsPixmapItem
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, QMimeData
-from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 from sidebar import Objects_From_Sidebar
-
 
 class Drop_Frame(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent=None):
@@ -36,19 +35,17 @@ class Drop_Frame(QGraphicsView):
 
             # Create a new DraggableSvg item
             svg_item = Objects_From_Sidebar(svg_file)
-            from main import Grid
             if not isinstance(svg_item, Grid):
                 svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
                 svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                svg_item.in_drop_frame = True
             svg_item.setScale(8.0)
-            svg_item.in_drop_frame = True
 
             # Add the new DraggableSvg item to the scene at the drop location
             self.scene().addItem(svg_item)
             svg_item.setPos(self.mapToScene(event.pos()))
         else:
             event.ignore()
-
 
 
     def mousePressEvent(self, event):
@@ -138,4 +135,10 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
             pen = QPen(Qt.red, 3, Qt.DashDotLine)
             painter.setPen(pen)
             painter.drawRect(self.boundingRect())
+
+class Grid(QGraphicsSvgItem):
+    def __init__(self, svg_file):
+        super().__init__(svg_file)
+        self.setFlag(QGraphicsItem.ItemIsMovable, False)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
 
