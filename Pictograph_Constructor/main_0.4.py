@@ -21,10 +21,29 @@ class MainApp(QWidget):
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
 
-        for svg in svgs:
-            svg_widget = QSvgWidget(svg)
-            svg_widget.setFixedSize(200, 200)  # Set a fixed size for the SVG widget
-            scroll_layout.addWidget(svg_widget)
+        # Create a QGraphicsScene
+        scene = QGraphicsScene()
+
+        for i, svg in enumerate(svgs):
+            # Create a DraggableSvg instance
+            svg_item = DraggableSvg(svg)
+            svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
+            svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+
+            # Scale the SVG item
+            svg_item.setScale(8.0)  # Adjust this value as needed
+
+            # Position the SVG item
+            svg_item.setPos(0, i * 200)  # Adjust the y-coordinate as needed
+
+            # Add the DraggableSvg instance to the scene
+            scene.addItem(svg_item)
+
+        # Create a QGraphicsView to display the scene
+        view = QGraphicsView(scene)
+
+        # Add the QGraphicsView to the layout
+        scroll_layout.addWidget(view)
 
         scroll_widget.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_widget)
@@ -40,6 +59,7 @@ class MainApp(QWidget):
         grid_item.setZValue(1)
         grid_item.setScale(8.0)
         self.scene.addItem(grid_item)
+
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.view)
@@ -115,30 +135,38 @@ class MainApp(QWidget):
         image.save("export.png")
 
 class DraggableSvg(QGraphicsSvgItem):
-    def __init__(self, svg_path: str):
-        super().__init__(svg_path)
-        self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+    def __init__(self, svg_file):
+        super().__init__(svg_file)
+        self.setAcceptDrops(True)
+        self.svg_file = svg_file
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.drag_start_position = event.pos()
-            self.setCursor(Qt.ClosedHandCursor)
 
     def mouseMoveEvent(self, event):
-        if not event.buttons() & Qt.LeftButton:
+        if not (event.buttons() & Qt.LeftButton):
             return
-        if not (event.pos() - self.drag_start_position).manhattanLength() > QApplication.startDragDistance():
+        if (event.pos() - self.drag_start_position).manhattanLength() < QApplication.startDragDistance():
             return
+
         drag = QDrag(self)
-        mimedata = QMimeData()
-        mimedata.setText(self.elementId())
-        drag.setMimeData(mimedata)
-        pixmap = QPixmap(self.boundingRect().size().toSize())
-        self.render(QPainter(pixmap))
-        drag.setPixmap(pixmap)
+        mime_data = QMimeData()
+
+        # Set the file path of the SVG file in the MIME data
+        mime_data.setText(self.svg_file)
+
+        drag.setMimeData(mime_data)
         drag.setHotSpot(event.pos().toPoint())
-        drag.exec_()
+
+        pixmap = QPixmap(self.boundingRect().size().toSize() * 8)
+        painter = QPainter(pixmap)
+
+        # Use the renderer's render method
+        self.renderer().render(painter)
+        drag.setPixmap(pixmap)
+
+        drag.exec_(Qt.CopyAction | Qt.MoveAction)
 
     def mouseReleaseEvent(self, event):
         self.setCursor(Qt.OpenHandCursor)
@@ -212,7 +240,6 @@ class Drag(QGraphicsPixmapItem):
         else:
             super().paint(painter, option, widget)
 
-
 class NewArrow(QLabel):
     def __init__(self, svg_path: str, parent=None):
         super().__init__(parent)
@@ -248,50 +275,44 @@ class NewArrow(QLabel):
             drag.exec_(Qt.CopyAction)
             self.setVisible(True)
 
-
-
 class DropFrame(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent=None):
         super().__init__(scene, parent)
-        self.setDragMode(QGraphicsView.NoDrag)
         self.setAcceptDrops(True)
 
     def dragEnterEvent(self, event):
-        if event.mimeData().hasImage():
-            event.acceptProposedAction()
-
-    def dragMoveEvent(self, event):
-        if event.mimeData().hasImage():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event):
-        if event.mimeData().hasText():
-            svg_id = event.mimeData().text()
-            for item in self.scene().items():
-                if isinstance(item, DraggableSvg) and item.elementId() == svg_id:
-                    item.setPos(self.mapToScene(event.pos()))
-                    break
-
-
-            id_text = event.mimeData().text()
-            if ',' in id_text:  # NewArrow
-                svg_path = event.mimeData().data('application/x-qabstractitemmodeldatalist').data().decode()
-                item = Drag(svg_path)
-                if item.drag_start_position is None:
-                    item.drag_start_position = QPointF(0, 0)
-                pos = self.mapToScene(event.pos()) - item.drag_start_position
-                item.setPos(pos)
-                self.scene().addItem(item)
-            if id_text.isdigit():  # Drag
-                item_id = int(id_text)
-                for item in self.scene().items():
-                    if isinstance(item, Drag) and item.id == item_id:
-                        pos = self.mapToScene(event.pos()) - item.drag_start_position
-                        item.setPos(pos)  # Move the existing item
-                        item.setVisible(True)  # unhide original item
-                        break
+        if event.mimeData().hasFormat('text/plain'):
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
         else:
             event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasFormat('text/plain'):
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasFormat('text/plain'):
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+
+            # Get the SVG file from the MIME data
+            svg_file = event.mimeData().text()
+
+            # Create a new DraggableSvg item
+            svg_item = DraggableSvg(svg_file)
+            svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
+            svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+
+            # Add the new DraggableSvg item to the scene at the drop location
+            self.scene().addItem(svg_item)
+            svg_item.setPos(self.mapToScene(event.pos()))
+        else:
+            event.ignore()
+
 
     def mousePressEvent(self, event):
         # find the item that we clicked
