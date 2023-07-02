@@ -2,9 +2,16 @@ import os
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
 from PyQt5.QtGui import QImage, QPainter
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPointF
 from sidebar import Objects_From_Sidebar
 from drop_frame import Drop_Frame, Grid
+import xml.etree.ElementTree as ET
+from PyQt5.QtWidgets import QGraphicsEllipseItem
+
+class CircleItem(QGraphicsEllipseItem):
+    def __init__(self, center, radius, parent=None):
+        super().__init__(parent)
+        self.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
 
 
 class MainApp(QWidget):
@@ -24,7 +31,29 @@ class MainApp(QWidget):
         scroll_layout = QVBoxLayout()
 
         # Create a QGraphicsScene
-        scene = QGraphicsScene()
+        self.scene = QGraphicsScene()
+
+        # Parse the SVG file
+        tree = ET.parse('images\\grid\\grid.svg')
+        root = tree.getroot()
+
+        # Define the SVG namespace
+        namespaces = {'svg': 'http://www.w3.org/2000/svg'}
+
+        # Find all circle elements in the SVG file
+        circles = root.findall('.//svg:circle', namespaces)
+
+        # Create a CircleItem for each circle and add it to the scene
+        for circle in circles:
+            # Get the center and radius of the circle
+            center = QPointF(float(circle.get('cx')), float(circle.get('cy')))
+            radius = float(circle.get('r'))
+
+            # Create a CircleItem
+            item = CircleItem(center, radius)
+
+            # Add the item to the scene
+            self.scene.addItem(item)
 
         for i, svg in enumerate(svgs):
             # Create a DraggableSvg instance
@@ -39,10 +68,10 @@ class MainApp(QWidget):
             svg_item.setPos(0, i * 200)  # Adjust the y-coordinate as needed
 
             # Add the DraggableSvg instance to the scene
-            scene.addItem(svg_item)
+            self.scene.addItem(svg_item)
 
         # Create a QGraphicsView to display the scene
-        view = QGraphicsView(scene)
+        view = QGraphicsView(self.scene)
 
         # Add the QGraphicsView to the layout
         scroll_layout.addWidget(view)
@@ -52,19 +81,13 @@ class MainApp(QWidget):
         scroll_area.setWidgetResizable(True)
         hbox.addWidget(scroll_area)
 
-        self.scene = QGraphicsScene()
-
-        # Create a Grid instance
-        grid_svg = 'images\\grid\\grid.svg'
-        grid_item = Grid(grid_svg)
-        grid_item.setZValue(1)
-        grid_item.setScale(8.0)
-        self.scene.addItem(grid_item)
-
         self.view = Drop_Frame(self.scene)
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.view)
+
+        # ... rest of the method ...
+
 
         self.deleteButton = QPushButton("Delete Selected")
         self.deleteButton.clicked.connect(self.deleteSelected)

@@ -8,7 +8,7 @@
     </style>
   </defs>
     <g id="Grid">
-        <circle id="center_point"class="cls-1" cx="32.5" cy="32.5" r="1.12"/>
+        <circle id="center_point" class="cls-1" cx="32.5" cy="32.5" r="1.12"/>
         
         <g id="hand_points">
             <circle class="N_hand_point" cx="32.5" cy="18.19" r=".45"/>
@@ -24,7 +24,7 @@
             <circle id="W_outer_point" class="cls-1" cx="2.5" cy="32.5" r="2.5"/>
         </g>
 
-        <g id="outer_points">
+        <g id="layer2_points">
             <circle id="NE_layer2_point" class="cls-1" cx="46.81" cy="18.19" r=".87"/>
             <circle id="SE_layer2_point" class="cls-1" cx="46.81" cy="46.81" r=".88"/>
             <circle id="SW_layer2_point" class="cls-1" cx="18.19" cy="46.81" r=".88"/>
