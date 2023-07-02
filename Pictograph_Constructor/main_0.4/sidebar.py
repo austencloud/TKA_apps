@@ -12,6 +12,7 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         self.in_drop_frame = False
 
     def mousePressEvent(self, event):
+        self.dragOffset = event.pos()
         if self.in_drop_frame:
             super().mousePressEvent(event)
         elif event.button() == Qt.LeftButton:
@@ -35,7 +36,7 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
             # Create a QDrag object
             drag = QDrag(self)
             drag.setMimeData(mime_data)
-            drag.setHotSpot(event.pos().toPoint())
+            drag.setHotSpot(self.dragOffset.toPoint())
 
             pixmap = QPixmap(self.boundingRect().size().toSize() * 8)
             painter = QPainter(pixmap)

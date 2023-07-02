@@ -5,10 +5,12 @@ from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer
 from sidebar import Objects_From_Sidebar
 
+
 class Drop_Frame(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent=None):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)
+        self.dragging = None
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('text/plain'):
@@ -34,8 +36,10 @@ class Drop_Frame(QGraphicsView):
 
             # Create a new DraggableSvg item
             svg_item = Objects_From_Sidebar(svg_file)
-            svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
-            svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+            from main import Grid
+            if not isinstance(svg_item, Grid):
+                svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
+                svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
             svg_item.setScale(8.0)
             svg_item.in_drop_frame = True
 
@@ -46,17 +50,23 @@ class Drop_Frame(QGraphicsView):
             event.ignore()
 
 
+
     def mousePressEvent(self, event):
-        # find the item that we clicked
         items = self.items(event.pos())
         if items:
-            # if we clicked on an item, select it
-            item = items[0]
-            item.setSelected(True)
+            self.dragging = items[0]
+            self.dragOffset = self.mapToScene(event.pos()) - self.dragging.pos()
+            self.dragging.setSelected(True)
         else:
-            # if we didn't click on an item, clear the selection
             for item in self.scene().selectedItems():
                 item.setSelected(False)
+
+    def mouseMoveEvent(self, event):
+        if self.dragging:
+            self.dragging.setPos(self.mapToScene(event.pos()) - self.dragOffset)
+
+    def mouseReleaseEvent(self, event):
+        self.dragging = None
 
 class Drop_Frame_Objects(QGraphicsPixmapItem):
     id_counter = 0
@@ -128,3 +138,4 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
             pen = QPen(Qt.red, 3, Qt.DashDotLine)
             painter.setPen(pen)
             painter.drawRect(self.boundingRect())
+

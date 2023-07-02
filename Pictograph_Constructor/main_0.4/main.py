@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVB
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import Qt
 from sidebar import Objects_From_Sidebar
+from PyQt5.QtSvg import QGraphicsSvgItem
 from drop_frame import Drop_Frame
 
 
@@ -53,15 +54,15 @@ class MainApp(QWidget):
         hbox.addWidget(scroll_area)
 
         self.scene = QGraphicsScene()
-        self.view = Drop_Frame(self.scene)
 
-        # in your Example.initUI() method, after initializing self.scene
+        # Create a Grid instance
         grid_svg = 'images\\svgs\\grid\\grid.svg'
-        grid_item = Objects_From_Sidebar(grid_svg)
+        grid_item = Grid(grid_svg)
         grid_item.setZValue(1)
         grid_item.setScale(8.0)
         self.scene.addItem(grid_item)
 
+        self.view = Drop_Frame(self.scene)
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.view)
@@ -135,6 +136,13 @@ class MainApp(QWidget):
 
         # Save the QImage to a file
         image.save("export.png")
+
+class Grid(QGraphicsSvgItem):
+    def __init__(self, svg_file):
+        super().__init__(svg_file)
+        self.setFlag(QGraphicsItem.ItemIsMovable, False)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+
 
 app = QApplication(sys.argv)
 ex = MainApp()
