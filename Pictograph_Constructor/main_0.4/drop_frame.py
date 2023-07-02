@@ -35,6 +35,7 @@ class Drop_Frame(QGraphicsView):
 
             # Create a new DraggableSvg item
             svg_item = Objects_From_Sidebar(svg_file)
+
             if not isinstance(svg_item, Grid):
                 svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
                 svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
@@ -141,4 +142,5 @@ class Grid(QGraphicsSvgItem):
         super().__init__(svg_file)
         self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+
 
