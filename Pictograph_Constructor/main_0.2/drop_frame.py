@@ -60,7 +60,7 @@ class Drop_Frame(QGraphicsView):
                 self.scene().addItem(arrow_item)
                 arrow_item.setPos(self.mapToScene(event.pos()))
 
-
+        
             arrow_item.setScale(8.0)
 
             # Add the new DraggableSvg item to the scene at the drop location
