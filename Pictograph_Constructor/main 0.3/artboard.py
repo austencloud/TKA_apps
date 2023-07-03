@@ -1,16 +1,18 @@
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsPixmapItem, QAbstractItemView
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
-from PyQt5.QtCore import Qt, QMimeData
+from PyQt5.QtCore import Qt, QMimeData, QPointF
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
-from sidebar import Objects_From_Sidebar
+from arrows import Objects_From_Sidebar
 from xml.dom import minidom
+from PyQt5.QtGui import QPen, QBrush, QColor
+from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsItemGroup
 
-
-class Drop_Frame(QGraphicsView):
+class Artboard(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, parent=None):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)
         self.dragging = None
+        self.grid = None 
 
         # Set the drag mode to QGraphicsView::RubberBandDrag
         self.setDragMode(QGraphicsView.RubberBandDrag)
@@ -113,7 +115,7 @@ class Drop_Frame(QGraphicsView):
         self.setRubberBandSelectionMode(Qt.IntersectsItemShape)
         super().mouseReleaseEvent(event)
 
-class Drop_Frame_Objects(QGraphicsPixmapItem):
+class Artboard_Objects(QGraphicsPixmapItem):
     id_counter = 0
 
     def __init__(self, svg_path: str):
@@ -142,9 +144,9 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
         super().__init__(pixmap)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.id = Drop_Frame_Objects.id_counter
-        Drop_Frame_Objects.id_counter += 1
-        self.Drop_Frame_Objects_start_position = None
+        self.id = Artboard_Objects.id_counter
+        Artboard_Objects.id_counter += 1
+        self.Artboard_Objects_start_position = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -152,26 +154,26 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
             views = self.scene().views()
             
             if views:
-                if self.Drop_Frame_Objects_start_position is None:  # this is for Drop_Frame_Objectsging copied items
-                    self.Drop_Frame_Objects_start_position = event.pos() - self.boundingRect().topLeft()
+                if self.Artboard_Objects_start_position is None:  # this is for Artboard_Objectsging copied items
+                    self.Artboard_Objects_start_position = event.pos() - self.boundingRect().topLeft()
                 
-                Drop_Frame_Objects = Drop_Frame_Objects(views[0])  # Use the first QGraphicsView as the parent
-                Drop_Frame_Objects.setHotSpot(self.Drop_Frame_Objects_start_position.toPoint())
+                Artboard_Objects = Artboard_Objects(views[0])  # Use the first QGraphicsView as the parent
+                Artboard_Objects.setHotSpot(self.Artboard_Objects_start_position.toPoint())
                 mimedata = QMimeData()
 
                 pixmap = self.pixmap()
                 mimedata.setImageData(pixmap.toImage())
                 mimedata.setText(str(self.id))
 
-                Drop_Frame_Objects.setMimeData(mimedata)
+                Artboard_Objects.setMimeData(mimedata)
 
                 pixmap_scaled = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                Drop_Frame_Objects.setPixmap(pixmap_scaled)
+                Artboard_Objects.setPixmap(pixmap_scaled)
 
-                self.Drop_Frame_Objects_start_position = event.pos() - self.boundingRect().topLeft()
-                Drop_Frame_Objects.setHotSpot(self.Drop_Frame_Objects_start_position.toPoint())
+                self.Artboard_Objects_start_position = event.pos() - self.boundingRect().topLeft()
+                Artboard_Objects.setHotSpot(self.Artboard_Objects_start_position.toPoint())
 
-                Drop_Frame_Objects.exec_(Qt.CopyAction)  # Execute the Drop_Frame_Objects action
+                Artboard_Objects.exec_(Qt.CopyAction)  # Execute the Artboard_Objects action
             else:
                 return  # Do nothing if there are no views
                 items = self.items(event.pos())
@@ -186,24 +188,45 @@ class Drop_Frame_Objects(QGraphicsPixmapItem):
             painter.setPen(pen)
             painter.drawRect(self.boundingRect())
 
-class Grid(QGraphicsSvgItem):
+class Grid(QGraphicsItemGroup):
     def __init__(self, grid_svg):
-        super().__init__(grid_svg)
-        self.setFlag(QGraphicsItem.ItemIsMovable, False)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        super().__init__()
 
         # Parse the SVG file
-        doc = minidom.parse(grid_svg)
+        self.doc = minidom.parse(grid_svg)
+
+        # Find all circle elements in the SVG file
+        circles = self.doc.getElementsByTagName('circle')
 
         # Find the circle with the id "center_point"
-        center_point_circle = doc.getElementById("center_point")
+        center_point_circle = None
+        for circle in circles:
+            if circle.getAttribute('id') == "center_point":
+                center_point_circle = circle
+                break
+
+        if center_point_circle is None:
+            raise ValueError("No circle with id 'center_point' found in SVG file")
 
         # Get the center point of the circle
         center_x = float(center_point_circle.getAttribute('cx'))
         center_y = float(center_point_circle.getAttribute('cy'))
 
         # Set the transformation origin point to the center point
-        grid_svg.setTransformOriginPoint(center_x, center_y)
+        self.setTransformOriginPoint(center_x, center_y)
+
+        # Create a CircleItem for each circle and add it to the group
+        for circle in circles:
+            # Get the center and radius of the circle
+            center = QPointF(float(circle.getAttribute('cx')), float(circle.getAttribute('cy')))
+            radius = float(circle.getAttribute('r'))
+
+            item = Make_Circle(center, radius)
+            item.setScale(8.0)  
+            item.setZValue(-1)
+            self.addToGroup(item)
+
+
     def mousePressEvent(self, event):
         pass
 
@@ -213,3 +236,13 @@ class Grid(QGraphicsSvgItem):
     def mouseReleaseEvent(self, event):
         pass
 
+class Make_Circle(QGraphicsEllipseItem):
+    def __init__(self, center, radius, parent=None):
+        super().__init__(parent)
+        self.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
+
+        # Set the brush to solid black
+        self.setBrush(QBrush(QColor(0, 0, 0)))
+
+        # Set the pen to no pen (i.e., no stroke)
+        self.setPen(QPen(Qt.NoPen))
