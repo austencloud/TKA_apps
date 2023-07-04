@@ -1,14 +1,14 @@
 import os
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
-from PyQt5.QtCore import QRectF
+from PyQt5.QtCore import QRectF, QPointF
 from arrows import Objects_From_Sidebar
 from artboard import Artboard, Grid
 from buttonhandlers import Button_Handlers
 
 class Main_Window(QWidget):
-    SVG_DIR = 'images\\arrows'
-    SVG_SCALE = 8.0
+    ARROW_DIR = 'images\\arrows'
+    SVG_SCALE = 9.0
     SVG_POS_Y_INCREMENT = 200
 
     def __init__(self):
@@ -22,7 +22,7 @@ class Main_Window(QWidget):
         arrow_box = self.initArrowBox()
         hbox.addWidget(arrow_box)
 
-        self.view = self.init_artboard()
+        self.view = self.initArtboard()
         vbox = QVBoxLayout()
         vbox.addWidget(self.view)
 
@@ -44,7 +44,7 @@ class Main_Window(QWidget):
         # Create a new QGraphicsScene for the QGraphicsView in the scroll area
         scroll_scene = QGraphicsScene()
 
-        svgs = [os.path.join(self.SVG_DIR, svg) for svg in os.listdir(self.SVG_DIR) if svg.endswith('.svg')]
+        svgs = [os.path.join(self.ARROW_DIR, svg) for svg in os.listdir(self.ARROW_DIR) if svg.endswith('.svg')]
 
         for i, svg in enumerate(svgs):
             # Create a DraggableSvg instance
@@ -70,38 +70,46 @@ class Main_Window(QWidget):
 
         return arrow_box
 
-    def init_artboard(self):
+    def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
         self.artboard.addItem(self.grid)
-        view = Artboard(self.artboard)
+        view = Artboard(self.artboard, self.grid)
         view.setSceneRect(QRectF(0, 0, view.width(), view.height()))
+
+        # Calculate the center of the frame
+        frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
+        print(frame_center)
+        # Move the grid to the center of the frame
+        self.grid.setPos(frame_center - self.grid.boundingRect().center())
+
         return view
 
+
     def initButtons(self, layout):
-        handlers = Button_Handlers(self.artboard)
+        handlers = Button_Handlers(self.artboard, self.view, self.grid)
 
         self.deleteButton = QPushButton("Delete Selected")
-        self.deleteButton.clicked.connect(handlers.deleteSelected)
+        self.deleteButton.clicked.connect(handlers.deleteArrow)
         layout.addWidget(self.deleteButton)
 
         self.rotateRightButton = QPushButton("Rotate Right")
-        self.rotateRightButton.clicked.connect(lambda: handlers.rotateSelected(90)) # 90 degrees clockwise
+        self.rotateRightButton.clicked.connect(lambda: handlers.rotateArrow(90)) # 90 degrees clockwise
         layout.addWidget(self.rotateRightButton)
 
         self.rotateLeftButton = QPushButton("Rotate Left")
-        self.rotateLeftButton.clicked.connect(lambda: handlers.rotateSelected(-90)) # 90 degrees counterclockwise
+        self.rotateLeftButton.clicked.connect(lambda: handlers.rotateArrow(-90)) # 90 degrees counterclockwise
         layout.addWidget(self.rotateLeftButton)
 
         self.mirrorHorizontallyButton = QPushButton("Mirror Horizontally")
-        self.mirrorHorizontallyButton.clicked.connect(lambda: handlers.mirrorSelected(True)) # Mirror horizontally
+        self.mirrorHorizontallyButton.clicked.connect(lambda: handlers.mirrorArrow(True)) # Mirror horizontally
         layout.addWidget(self.mirrorHorizontallyButton)
 
         self.mirrorVerticallyButton = QPushButton("Mirror Vertically")
-        self.mirrorVerticallyButton.clicked.connect(lambda: handlers.mirrorSelected(False)) # Mirror vertically
+        self.mirrorVerticallyButton.clicked.connect(lambda: handlers.mirrorArrow(False)) # Mirror vertically
         layout.addWidget(self.mirrorVerticallyButton)
 
         self.exportButton = QPushButton("Export to PNG")
-        self.exportButton.clicked.connect(handlers.exportToPng)
+        self.exportButton.clicked.connect(handlers.exportArtboard)
         layout.addWidget(self.exportButton)
 
 

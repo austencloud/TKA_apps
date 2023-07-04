@@ -6,13 +6,16 @@ from arrows import Objects_From_Sidebar
 from xml.dom import minidom
 from PyQt5.QtGui import QPen, QBrush, QColor
 from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsItemGroup
+from grid import Grid
+from PyQt5.QtWidgets import QGraphicsEllipseItem
+from PyQt5.QtGui import QBrush, QColor
 
 class Artboard(QGraphicsView):
-    def __init__(self, scene: QGraphicsScene, parent=None):
+    def __init__(self, scene: QGraphicsScene, grid, parent=None):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)
         self.dragging = None
-        self.grid = None 
+        self.grid = grid 
 
         # Set the drag mode to QGraphicsView::RubberBandDrag
         self.setDragMode(QGraphicsView.RubberBandDrag)
@@ -43,35 +46,27 @@ class Artboard(QGraphicsView):
             event.setDropAction(Qt.CopyAction)
             event.accept()
 
-            # Get the SVG file from the MIME data
             grid_svg = event.mimeData().text()
 
-            # Create a new DraggableSvg item
             if "grid" in grid_svg:
                 grid_item = Grid(grid_svg)
                 grid_item.setScale(8.0)
 
-                # Add the new DraggableSvg item to the scene at the drop location
                 self.scene().addItem(grid_item)
                 grid_item.setPos(self.mapToScene(event.pos()))
+
             else:
                 arrow_item = Objects_From_Sidebar(grid_svg)
                 arrow_item.setScale(8.0)
 
-                # Add the new DraggableSvg item to the scene at the drop location
                 self.scene().addItem(arrow_item)
                 arrow_item.setPos(self.mapToScene(event.pos()))
 
-        
             arrow_item.setScale(8.0)
-
-            # Add the new DraggableSvg item to the scene at the drop location
             self.scene().addItem(arrow_item)
             arrow_item.setPos(self.mapToScene(event.pos()))
         else:
             event.ignore()
-
-
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())
@@ -188,61 +183,4 @@ class Artboard_Objects(QGraphicsPixmapItem):
             painter.setPen(pen)
             painter.drawRect(self.boundingRect())
 
-class Grid(QGraphicsItemGroup):
-    def __init__(self, grid_svg):
-        super().__init__()
 
-        # Parse the SVG file
-        self.doc = minidom.parse(grid_svg)
-
-        # Find all circle elements in the SVG file
-        circles = self.doc.getElementsByTagName('circle')
-
-        # Find the circle with the id "center_point"
-        center_point_circle = None
-        for circle in circles:
-            if circle.getAttribute('id') == "center_point":
-                center_point_circle = circle
-                break
-
-        if center_point_circle is None:
-            raise ValueError("No circle with id 'center_point' found in SVG file")
-
-        # Get the center point of the circle
-        center_x = float(center_point_circle.getAttribute('cx'))
-        center_y = float(center_point_circle.getAttribute('cy'))
-
-        # Set the transformation origin point to the center point
-        self.setTransformOriginPoint(center_x, center_y)
-
-        # Create a CircleItem for each circle and add it to the group
-        for circle in circles:
-            # Get the center and radius of the circle
-            center = QPointF(float(circle.getAttribute('cx')), float(circle.getAttribute('cy')))
-            radius = float(circle.getAttribute('r'))
-
-            item = Make_Circle(center, radius)
-            item.setScale(8.0)  
-            item.setZValue(-1)
-            self.addToGroup(item)
-
-
-    def mousePressEvent(self, event):
-        pass
-
-    def mouseMoveEvent(self, event):
-        pass
-
-    def mouseReleaseEvent(self, event):
-        pass
-
-class Make_Circle(QGraphicsEllipseItem):
-    def __init__(self, center, radius, parent=None):
-        super().__init__(parent)
-        self.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
-
-        # Set the brush to solid black
-        self.setBrush(QBrush(QColor(0, 0, 0)))
-
-        # Set the pen to no pen (i.e., no stroke)
-        self.setPen(QPen(Qt.NoPen))

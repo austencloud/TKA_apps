@@ -1,8 +1,10 @@
-from PyQt5.QtWidgets import QApplication, QLabel, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QApplication, QGraphicsItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath
-from PyQt5.QtCore import Qt, QMimeData, QPointF, QByteArray
+from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
-
+from PyQt5.QtWidgets import QGraphicsEllipseItem
+from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtGui import QPen, QBrush, QColor
 
 class Objects_From_Sidebar(QGraphicsSvgItem):
     def __init__(self, svg_file):
@@ -10,6 +12,7 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         self.setAcceptDrops(True)
         self.svg_file = svg_file
         self.in_drop_frame = False
+        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
 
         if "grid" not in svg_file:
             self.setFlag(QGraphicsSvgItem.ItemIsMovable, True)
@@ -23,40 +26,22 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         elif event.button() == Qt.LeftButton:
             self.Drop_Frame_Objects_start_position = event.pos()
 
-            # Create a QDrag object
             self.drag = QDrag(self)
             mime_data = QMimeData()
-
-            # Set the file path of the SVG file in the MIME data
             mime_data.setText(self.svg_file)
             self.drag.setMimeData(mime_data)
-
-            # Create a QImage with the same dimensions as the item
             image = QImage(self.boundingRect().size().toSize() * 8, QImage.Format_RGB32)
-
-            # Create a QPainter and draw the item into the QImage
             painter = QPainter(image)
 
-            # Set the QPainter's render hint to antialiasing
             painter.setRenderHint(QPainter.Antialiasing)
-
-            # Render the item using the QPainter
             renderer = QSvgRenderer(self.svg_file)
             if not renderer.isValid():
                 print(f"Failed to load SVG file: {self.svg_file}")
                 return
             renderer.render(painter)
-
-            # End the QPainter
             painter.end()
-
-            # Convert the QImage to a QPixmap
             pixmap = QPixmap.fromImage(image)
-
-            # Set the pixmap for the drag
             self.drag.setPixmap(pixmap)
-
-            # Set the hotspot to the center of the pixmap
             self.drag.setHotSpot(pixmap.rect().center())
 
     def mouseMoveEvent(self, event):
@@ -76,5 +61,42 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         path = QPainterPath()
         path.addRect(self.renderer().boundsOnElement(self.elementId()))
         return path
-    
 
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange:
+            self.updateRedDot()
+            # The item's position is about to change
+            if self.grid is not None:
+                # Get the center of the grid
+                grid_center = self.grid.getCenter()
+
+                # Convert the center of the grid from scene coordinates to item coordinates
+                local_grid_center = self.mapFromScene(grid_center)
+
+                # Set the transformation origin point to the grid's center
+                self.setTransformOriginPoint(local_grid_center)
+
+        return super().itemChange(change, value)
+
+    def updateRedDot(self):
+        if self.grid is not None:
+            # Get the center of the grid
+            grid_center = self.grid.getCenter()
+
+            # Create a red dot at the grid center
+            red_dot = RedDot(grid_center)
+
+            # Add the red dot to the scene
+            self.scene().addItem(red_dot)
+
+
+class RedDot(QGraphicsEllipseItem):
+    def __init__(self, center, radius=5, parent=None):
+        super().__init__(parent)
+        self.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
+
+        # Set the brush to solid red
+        self.setBrush(QBrush(QColor(255, 0, 0)))
+
+        # Set the pen to no pen (i.e., no stroke)
+        self.setPen(QPen(Qt.NoPen))
