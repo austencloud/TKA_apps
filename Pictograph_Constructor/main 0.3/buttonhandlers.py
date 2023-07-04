@@ -7,13 +7,12 @@ class Button_Handlers:
         self.view = view
         self.grid = grid
 
-
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             self.deleteArrow()
 
     def rotateArrow(self, angle):
-        print("rotateArrow")
+        
         if self.grid is not None:
             # Get the center of the grid
             grid_center = self.grid.getCenter()
@@ -21,7 +20,9 @@ class Button_Handlers:
             for item in self.artboard.selectedItems():
                 # Convert the center of the grid from scene coordinates to item coordinates
                 local_grid_center = item.mapFromScene(grid_center)
-
+                print("rotateArrow")
+                print("local grid center: ", local_grid_center)
+                print("grid center: ",  grid_center)
                 # Set the transformation origin point to the grid's center
                 item.setTransformOriginPoint(local_grid_center)
 

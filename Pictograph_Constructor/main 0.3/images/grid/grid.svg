@@ -12,10 +12,10 @@
         <circle id="center_point" class="cls-1" cx="32.5" cy="32.5" r="1.12"/>
 
         <g id="hand_points">
-            <circle class="N_hand_point" cx="32.5" cy="18.19" r=".45"/>
-            <circle class="E_hand_point" cx="46.81" cy="32.5" r=".45"/>
-            <circle class="S_hand_point" cx="32.5" cy="46.81" r=".45"/>
-            <circle class="W_hand_point" cx="18.19" cy="32.5" r=".45"/>
+            <circle id="N_hand_point" class="cls-1" cx="32.5" cy="18.19" r=".45"/>
+            <circle id="E_hand_point" class="cls-1" cx="46.81" cy="32.5" r=".45"/>
+            <circle id="S_hand_point" class="cls-1" cx="32.5" cy="46.81" r=".45"/>
+            <circle id="W_hand_point" class="cls-1" cx="18.19" cy="32.5" r=".45"/>
         </g>
 
         <g id="outer_points">

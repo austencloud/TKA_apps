@@ -23,6 +23,7 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
             self.setFlag(QGraphicsSvgItem.ItemIsSelectable, True)
             self.setTransformOriginPoint(self.boundingRect().center())
 
+
     def mousePressEvent(self, event):
         self.dragOffset = event.pos() - self.boundingRect().center()
         if self.in_drop_frame:
@@ -88,9 +89,16 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
             self.scene().removeItem(self.dot)
 
         # Add a new red dot at the transformation origin point
-        grid_center = self.grid.getCenter()
-        self.dot = RedDot(grid_center, radius=2)
-        self.scene().addItem(self.dot)
+        if self.grid is not None:
+            # Get the transformation origin point in the local coordinates of the arrow
+            local_grid_center = self.mapFromScene(self.grid.getCenter())
+
+            # Convert the transformation origin point to scene coordinates
+            scene_grid_center = self.mapToScene(local_grid_center)
+
+            # Create the red dot at the transformation origin point in scene coordinates
+            self.dot = RedDot(scene_grid_center, radius=2)
+            self.scene().addItem(self.dot)
 
 
 
