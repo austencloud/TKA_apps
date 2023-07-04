@@ -46,27 +46,25 @@ class Artboard(QGraphicsView):
             event.setDropAction(Qt.CopyAction)
             event.accept()
 
-            grid_svg = event.mimeData().text()
+            svg_file = event.mimeData().text()
 
-            if "grid" in grid_svg:
-                grid_item = Grid(grid_svg)
-                grid_item.setScale(8.0)
-
-                self.scene().addItem(grid_item)
-                grid_item.setPos(self.mapToScene(event.pos()))
-
-            else:
-                arrow_item = Objects_From_Sidebar(grid_svg)
-                arrow_item.setScale(8.0)
-
-                self.scene().addItem(arrow_item)
-                arrow_item.setPos(self.mapToScene(event.pos()))
-
+            arrow_item = Objects_From_Sidebar(svg_file)
             arrow_item.setScale(8.0)
+
+            # Set the grid attribute of the arrow item to the grid of the Artboard
+            arrow_item.grid = self.grid
+
             self.scene().addItem(arrow_item)
             arrow_item.setPos(self.mapToScene(event.pos()))
-        else:
-            event.ignore()
+
+            # Set the transformation origin point to the grid's center
+            grid_center = self.grid.getCenter()
+            arrow_item.setTransformOriginPoint(arrow_item.mapFromScene(grid_center))
+
+            # Add a red dot at the transformation origin point
+            dot = QGraphicsEllipseItem(grid_center.x() - 2, grid_center.y() - 2, 4, 4)
+            dot.setBrush(QBrush(Qt.red))
+            self.scene().addItem(dot)
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())

@@ -14,6 +14,10 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         self.in_drop_frame = False
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
 
+        # Define the grid and dot attributes
+        self.grid = None
+        self.dot = None
+
         if "grid" not in svg_file:
             self.setFlag(QGraphicsSvgItem.ItemIsMovable, True)
             self.setFlag(QGraphicsSvgItem.ItemIsSelectable, True)
@@ -63,31 +67,31 @@ class Objects_From_Sidebar(QGraphicsSvgItem):
         return path
 
     def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange:
+        if change == QGraphicsItem.ItemPositionChange and self.grid is not None:
+            # Get the center of the grid
+            grid_center = self.grid.getCenter()
+
+            # Convert the center of the grid from scene coordinates to item coordinates
+            local_grid_center = self.mapFromScene(grid_center)
+
+            # Set the transformation origin point to the grid's center
+            self.setTransformOriginPoint(local_grid_center)
+
+            # Update the red dot
             self.updateRedDot()
-            # The item's position is about to change
-            if self.grid is not None:
-                # Get the center of the grid
-                grid_center = self.grid.getCenter()
-
-                # Convert the center of the grid from scene coordinates to item coordinates
-                local_grid_center = self.mapFromScene(grid_center)
-
-                # Set the transformation origin point to the grid's center
-                self.setTransformOriginPoint(local_grid_center)
 
         return super().itemChange(change, value)
 
     def updateRedDot(self):
-        if self.grid is not None:
-            # Get the center of the grid
-            grid_center = self.grid.getCenter()
+        # Remove the old red dot
+        if self.dot is not None:
+            self.scene().removeItem(self.dot)
 
-            # Create a red dot at the grid center
-            red_dot = RedDot(grid_center)
+        # Add a new red dot at the transformation origin point
+        grid_center = self.grid.getCenter()
+        self.dot = RedDot(grid_center, radius=2)
+        self.scene().addItem(self.dot)
 
-            # Add the red dot to the scene
-            self.scene().addItem(red_dot)
 
 
 class RedDot(QGraphicsEllipseItem):
