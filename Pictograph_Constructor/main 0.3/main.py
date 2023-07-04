@@ -1,7 +1,9 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
-from PyQt5.QtCore import QRectF, QPointF
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QGraphicsEllipseItem, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
+from PyQt5.QtCore import QRectF, QPointF, Qt
+
+from PyQt5.QtGui import QPen, QBrush, QColor
 from arrows import Objects_From_Sidebar
 from artboard import Artboard, Grid
 from buttonhandlers import Button_Handlers
@@ -72,21 +74,33 @@ class Main_Window(QWidget):
 
     def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
-        self.artboard.addItem(self.grid)
         view = Artboard(self.artboard, self.grid)
+
         view.setSceneRect(QRectF(0, 0, view.width(), view.height()))
+        #disable the scroll bars and overflow
+        view.setHorizontalScrollBarPolicy(1)
+        view.setVerticalScrollBarPolicy(1)
+
+        #set size of the artboard to a fixed amount
+        view.setFixedSize(1000, 1000)
 
         # Calculate the center of the frame
         frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
         print(frame_center)
-        # Move the grid to the center of the frame
-        self.grid.setPos(frame_center - self.grid.boundingRect().center())
+        #show a blue dot at the frame center
+        center = QGraphicsEllipseItem(QRectF(frame_center.x() - 5, frame_center.y() - 5, 10, 10))
+        center.setBrush(QBrush(QColor(0, 0, 255)))
+        self.artboard.addItem(center)        
+
+        #add the grid at the very center of the artboard using the 
+        self.grid.setPos(frame_center.x() - self.grid.boundingRect().width() / 2, frame_center.y() - self.grid.boundingRect().height() / 2)
+        self.artboard.addItem(self.grid)
+
 
         return view
 
-
     def initButtons(self, layout):
-        handlers = Button_Handlers(self.artboard, self.view, self.grid)
+        handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard)
 
         self.deleteButton = QPushButton("Delete Selected")
         self.deleteButton.clicked.connect(handlers.deleteArrow)

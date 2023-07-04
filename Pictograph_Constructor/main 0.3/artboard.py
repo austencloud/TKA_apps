@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsPixmapItem, QAbstractItemView
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
-from PyQt5.QtCore import Qt, QMimeData, QPointF
+from PyQt5.QtCore import Qt, QMimeData, QPointF, QRectF
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 from arrows import Objects_From_Sidebar
 from xml.dom import minidom
@@ -17,15 +17,21 @@ class Artboard(QGraphicsView):
         self.dragging = None
         self.grid = grid 
 
+
+        
         # Set the drag mode to QGraphicsView::RubberBandDrag
         self.setDragMode(QGraphicsView.RubberBandDrag)
-        self.setStyleSheet("QGraphicsView { rubberBandColor: rgba(0, 0, 125, 25); }")
 
         # Set the QGraphicsView to interactive mode
         self.setInteractive(True)
 
         # Set a background for the QGraphicsScene
         scene.setBackgroundBrush(Qt.white)
+
+    def resizeEvent(self, event):
+        # Adjust the scene's rectangle to match the view's rectangle
+        self.setSceneRect(QRectF(self.rect()))
+        super().resizeEvent(event)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('text/plain'):
@@ -46,25 +52,18 @@ class Artboard(QGraphicsView):
             event.setDropAction(Qt.CopyAction)
             event.accept()
 
-            svg_file = event.mimeData().text()
+            # Get the SVG file from the MIME data
+            dropped_svg = event.mimeData().text()
 
-            arrow_item = Objects_From_Sidebar(svg_file)
+            # Create a new DraggableSvg item
+            arrow_item = Objects_From_Sidebar(dropped_svg)
             arrow_item.setScale(8.0)
 
-            # Set the grid attribute of the arrow item to the grid of the Artboard
-            arrow_item.grid = self.grid
-
+            # Add the new DraggableSvg item to the scene at the drop location
             self.scene().addItem(arrow_item)
             arrow_item.setPos(self.mapToScene(event.pos()))
-
-            # Set the transformation origin point to the grid's center
-            grid_center = self.grid.getCenter()
-            arrow_item.setTransformOriginPoint(arrow_item.mapFromScene(grid_center))
-
-            # Add a red dot at the transformation origin point
-            dot = QGraphicsEllipseItem(grid_center.x() - 2, grid_center.y() - 2, 4, 4)
-            dot.setBrush(QBrush(Qt.red))
-            self.scene().addItem(dot)
+        else:
+            event.ignore()
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())

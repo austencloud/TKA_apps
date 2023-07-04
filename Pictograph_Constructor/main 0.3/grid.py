@@ -1,13 +1,5 @@
-from PyQt5.QtGui import QPen
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import QPointF
 from xml.dom import minidom
-from PyQt5.QtGui import QPen, QBrush, QColor
-from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsItemGroup
-
-from PyQt5.QtSvg import QGraphicsSvgItem
-
-from PyQt5.QtSvg import QGraphicsSvgItem
-
 from PyQt5.QtSvg import QGraphicsSvgItem
 
 class Grid(QGraphicsSvgItem):
@@ -35,13 +27,13 @@ class Grid(QGraphicsSvgItem):
         center_y = float(center_point_circle.getAttribute('cy'))
 
         # Store the center point as an attribute
-        self.center_point = QPointF(center_x * 8.0, center_y * 8.0)  # Multiply by the scale factor
+        self.center_point = QPointF(center_x, center_y)
 
-        # Set the transformation origin point to the center point
-        self.setTransformOriginPoint(self.center_point)
+        #print the center point coordinates
+        print("center point of the grid: ", self.center_point)
 
-
-
+        # Scale the item by a factor of 8
+        self.setScale(8.0)
 
     def getCenter(self):
         return self.mapToScene(self.center_point)

@@ -1,32 +1,28 @@
-from PyQt5.QtGui import QImage, QPainter
+from PyQt5.QtGui import QImage, QPainter, QBrush, QPen, QPolygonF, QPolygon, QColor
 from PyQt5.QtCore import Qt
 
 class Button_Handlers:
-    def __init__(self, artboard, view, grid):
+    def __init__(self, artboard, view, grid, scene):
         self.artboard = artboard
         self.view = view
         self.grid = grid
+        self.scene = scene
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             self.deleteArrow()
 
     def rotateArrow(self, angle):
-        
-        if self.grid is not None:
-            # Get the center of the grid
-            grid_center = self.grid.getCenter()
+        if self.view.grid is not None:
+            grid_center_scene = self.view.grid.getCenter()
 
-            for item in self.artboard.selectedItems():
-                # Convert the center of the grid from scene coordinates to item coordinates
-                local_grid_center = item.mapFromScene(grid_center)
-                print("rotateArrow")
-                print("local grid center: ", local_grid_center)
-                print("grid center: ",  grid_center)
-                # Set the transformation origin point to the grid's center
-                item.setTransformOriginPoint(local_grid_center)
+            for item in self.scene.selectedItems():
+                grid_center_local = item.mapFromScene(grid_center_scene)
 
-                # Rotate the item by the specified angle
+                #show a red dot at the center of the grid
+                self.dot = self.scene.addEllipse(grid_center_scene.x() - 5, grid_center_scene.y() - 5, 10, 10, QPen(Qt.red), QBrush(Qt.red))
+                #set the transform oigin around the center of the grid:
+                item.setTransformOriginPoint(grid_center_local)
                 item.setRotation(item.rotation() + angle)
 
 
