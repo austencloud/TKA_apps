@@ -5,6 +5,7 @@ from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 import os
 
 class Arrow_Logic(QGraphicsSvgItem):
+    SVG_SCALE = 8.0
     def __init__(self, svg_file, artboard):
         super().__init__(svg_file)
         self.setAcceptDrops(True)
@@ -54,6 +55,13 @@ class Arrow_Logic(QGraphicsSvgItem):
             self.drag.setPixmap(pixmap)
             self.drag.setHotSpot(pixmap.rect().center())
 
+
+
+
+
+
+
+
     def mouseMoveEvent(self, event):
         if self.in_artboard:
             super().mouseMoveEvent(event)
@@ -62,43 +70,55 @@ class Arrow_Logic(QGraphicsSvgItem):
         elif (event.pos() - self.artboard_start_position).manhattanLength() < QApplication.startDragDistance():
             return
         else:
-            mouse_pos = self.artboard.mapToScene(self.artboard.mapFromGlobal(QCursor.pos()))
-            if mouse_pos.y() < self.artboard.viewport().height() / 2:
-                if mouse_pos.x() < self.artboard.viewport().width() / 2:
-                    quadrant = 'nw'
+            mouse_pos = self.artboard.mapToScene(self.artboard.viewport().mapFromGlobal(QCursor.pos()))
+            artboard_rect = self.artboard.sceneRect()
+            if artboard_rect.contains(mouse_pos):
+                if mouse_pos.y() < artboard_rect.height() / 2:
+                    if mouse_pos.x() < artboard_rect.width() / 2:
+                        quadrant = 'nw'
+                    else:
+                        quadrant = 'ne'
                 else:
-                    quadrant = 'ne'
-            else:
-                if mouse_pos.x() < self.artboard.viewport().width() / 2:
-                    quadrant = 'sw'
+                    if mouse_pos.x() < artboard_rect.width() / 2:
+                        quadrant = 'sw'
+                    else:
+                        quadrant = 'se'
+
+                # print the current quadrant whenever a mouse drags over it
+                print(quadrant)
+
+                base_name = os.path.basename(self.svg_file)
+
+                if base_name.startswith('red_anti'):
+                    new_svg = f'images\\arrows\\red\\{self.orientation}\\anti\\red_anti_{self.orientation}_{quadrant}.svg'
+                elif base_name.startswith('red_iso'):
+                    new_svg = f'images\\arrows\\red\\{self.orientation}\\iso\\red_iso_{self.orientation}_{quadrant}.svg'
+                elif base_name.startswith('blue_anti'):
+                    new_svg = f'images\\arrows\\blue\\{self.orientation}\\anti\\blue_anti_{self.orientation}_{quadrant}.svg'
+                elif base_name.startswith('blue_iso'):
+                    new_svg = f'images\\arrows\\blue\\{self.orientation}\\iso\\blue_iso_{self.orientation}_{quadrant}.svg'
                 else:
-                    quadrant = 'se'
-
-
-            base_name = os.path.basename(self.svg_file)
-
-            if base_name.startswith('red_anti'):
-                new_svg = f'images\\arrows\\red\\{self.orientation}\\anti\\red_anti_{self.orientation}_{quadrant}.svg'
-            elif base_name.startswith('red_iso'):
-                new_svg = f'images\\arrows\\red\\{self.orientation}\\iso\\red_iso_{self.orientation}_{quadrant}.svg'
-            elif base_name.startswith('blue_anti'):
-                new_svg = f'images\\arrows\\blue\\{self.orientation}\\anti\\blue_anti_{self.orientation}_{quadrant}.svg'
-            elif base_name.startswith('blue_iso'):
-                new_svg = f'images\\arrows\\blue\\{self.orientation}\\iso\\blue_iso_{self.orientation}_{quadrant}.svg'
+                    print(f"Unexpected svg_file: {self.svg_file}")
+                    new_svg = self.svg_file
             else:
-                print(f"Unexpected svg_file: {self.svg_file}")
                 new_svg = self.svg_file
 
             new_renderer = QSvgRenderer(new_svg)
 
             if new_renderer.isValid():
-                pixmap = QPixmap(self.drag.pixmap().size())
+                pixmap = QPixmap(self.boundingRect().size().toSize() * self.SVG_SCALE)
                 painter = QPainter(pixmap)
                 new_renderer.render(painter)
                 painter.end()
                 self.drag.setPixmap(pixmap)
 
             self.drag.exec_(Qt.CopyAction | Qt.MoveAction)
+
+
+
+
+
+
 
     def mouseReleaseEvent(self, event):
         self.setCursor(Qt.OpenHandCursor)

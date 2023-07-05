@@ -1,48 +1,62 @@
 from PyQt5.QtGui import QImage, QPainter
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtSvg import QSvgRenderer
 import os
 
 class Button_Handlers:
-    def __init__(self, artboard, view, grid, scene):
+    def __init__(self, artboard, view, grid, scene, main_window):
         self.artboard = artboard
         self.view = view
         self.grid = grid
         self.scene = scene
+        self.main_window = main_window
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             self.deleteArrow()
 
     def rotateArrow(self, direction):
-        for item in self.artboard.selectedItems():
-            current_svg = item.svg_file
-            base_name = os.path.basename(current_svg)
-            color, type_, orientation, quadrant = base_name.split('_')[:4]
-            print(color, type_, orientation, quadrant)
-            quadrants = ['ne', 'se', 'sw', 'nw']
-            quadrant = quadrant.replace('.svg', '')
-            current_quadrant_index = quadrants.index(quadrant)
-            if direction == "right":
-                new_quadrant_index = (current_quadrant_index + 1) % 4
-            elif direction == "left":
-                new_quadrant_index = (current_quadrant_index - 1) % 4
-            else:
-                print("Unexpected direction:", direction)
-                continue
-            new_quadrant = quadrants[new_quadrant_index]
-            new_svg = current_svg.replace(quadrant, new_quadrant)
-            new_renderer = QSvgRenderer(new_svg)
-            if new_renderer.isValid():
-                item.setSharedRenderer(new_renderer)
-                item.svg_file = new_svg
-            else:
-                print("Failed to load SVG file:", new_svg)
+        if self.view.grid is not None:
+            scene_center = self.artboard.sceneRect().center()
+            for item in self.artboard.selectedItems():
+                # Get the current position of the item relative to the scene center
+                current_pos = item.pos() - scene_center
+
+                # Calculate the new position based on the rotation direction
+                if direction == "right":
+                    new_pos = QPointF(-current_pos.y(), current_pos.x())
+                else:  # direction == "left"
+                    new_pos = QPointF(current_pos.y(), -current_pos.x())
+
+                # Move the item to the new position
+                item.setPos(scene_center + new_pos)
+
+                # Change the SVG file to match the new orientation
+                base_name = os.path.basename(item.svg_file)
+                color, type_, orientation, quadrant = base_name.split('_')[:4]
+                quadrant = quadrant.replace('.svg', '')
+
+                quadrants = ['ne', 'se', 'sw', 'nw']
+                current_quadrant_index = quadrants.index(quadrant)
+                if direction == "right":
+                    new_quadrant_index = (current_quadrant_index + 1) % 4
+                else:  # direction == "left"
+                    new_quadrant_index = (current_quadrant_index - 1) % 4
+
+                new_quadrant = quadrants[new_quadrant_index]
+                new_svg = item.svg_file.replace(quadrant, new_quadrant)
+
+                new_renderer = QSvgRenderer(new_svg)
+                if new_renderer.isValid():
+                    item.setSharedRenderer(new_renderer)
+                    item.svg_file = new_svg
+                else:
+                    print("Failed to load SVG file:", new_svg)
 
     def mirrorArrow(self):
         for item in self.artboard.selectedItems():
             current_svg = item.svg_file
-            print(f"Current SVG: {current_svg}")  # Print the current SVG file path
+
             if item.orientation == "l":
                 new_svg = current_svg.replace("_l_", "_r_").replace("\\l\\", "\\r\\")
                 item.orientation = "r"
@@ -52,7 +66,7 @@ class Button_Handlers:
             else:
                 print("Unexpected svg_file:", current_svg)
                 continue
-            print(f"New SVG: {new_svg}")  # Print the new SVG file path
+
             new_renderer = QSvgRenderer(new_svg)
             if new_renderer.isValid():
                 item.setSharedRenderer(new_renderer)
@@ -90,7 +104,6 @@ class Button_Handlers:
             current_svg = item.svg_file
             base_name = os.path.basename(current_svg)
             color, type_, orientation, quadrant = base_name.split('_')[:4]
-            print(color, type_, orientation, quadrant)
             if color == "red":
                 new_color = "blue"
             elif color == "blue":

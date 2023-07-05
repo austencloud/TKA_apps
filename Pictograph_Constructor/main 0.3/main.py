@@ -1,17 +1,17 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem, QLabel
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
 from arrows import Arrow_Logic
-from artboardEvents import Artboard_Events
+from artboardEvents import Artboard_Events, updateInfoTracker
 from buttonHandlers import Button_Handlers
 from grid import Grid
 
 
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
-    SVG_SCALE = 9.0
+    SVG_SCALE = 8.0
     SVG_POS_Y = 225
 
     def __init__(self):
@@ -70,9 +70,9 @@ class Main_Window(QWidget):
         view.setFixedSize(600, 600)
 
         transform = QTransform()
-        frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
+        self.grid_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
 
-        transform.translate(frame_center.x() - 260, frame_center.y() - 260)
+        transform.translate(self.grid_center.x() - 260, self.grid_center.y() - 260)
         self.grid.setTransform(transform)
 
         line_v = QGraphicsLineItem(view.frameSize().width() / 2, 0, view.frameSize().width() / 2, view.frameSize().height())
@@ -88,7 +88,7 @@ class Main_Window(QWidget):
         return view
 
     def initButtons(self, layout):
-        handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard)
+        handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard, self)
 
         masterbtnlayout = QVBoxLayout()
         buttonlayout = QHBoxLayout()
@@ -124,7 +124,6 @@ class Main_Window(QWidget):
         self.bringForward.clicked.connect(handlers.bringForward)
         buttonstack2.addWidget(self.bringForward)
 
-        #implement a swap colors button and connect it to the function in eventhandlers
         self.swapColors = QPushButton("Swap Colors")
         self.swapColors.clicked.connect(handlers.swapColors)
         buttonstack2.addWidget(self.swapColors)
@@ -132,6 +131,14 @@ class Main_Window(QWidget):
         self.exportButton = QPushButton("Export to PNG")
         self.exportButton.clicked.connect(handlers.exportArtboard)
         masterbtnlayout.addWidget(self.exportButton)
+
+        # # add text label for infotracker
+        # self.infoTracker = QLabel("Info Tracker")
+        # self.infoTracker.setFont(QFont('Helvetica', 14))
+        # #connect to handler so it updates whenever the state of the artboard changes
+        # self.artboard.changed.connect(updateInfoTracker.updateText())
+        # masterbtnlayout.addWidget(self.infoTracker)
+
 
         self.deleteButton.setFont(QFont('Helvetica', 14))
         self.rotateRightButton.setFont(QFont('Helvetica', 14))

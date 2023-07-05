@@ -1,10 +1,10 @@
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsTextItem
 from PyQt5.QtCore import Qt, QRectF
 from arrows import Arrow_Logic
 from PyQt5.QtWidgets import QGraphicsItem
 from PyQt5.QtSvg import QSvgRenderer
 import os
-from PyQt5.QtGui import QDrag, QPixmap, QPainter
+from PyQt5.QtGui import QDrag, QPixmap, QPainter, QFont, QPen, QColor, QBrush, QCursor, QTransform
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtCore import QTimer, Qt
 
@@ -204,3 +204,18 @@ class Update_Arrow_Drag_Preview(QDrag):
             new_renderer.render(painter)
             painter.end()
             self.setPixmap(pixmap)
+
+#track the current items in the artboard and display them as text
+class updateInfoTracker(QGraphicsTextItem):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setPlainText("Current Items: ")
+        self.setPos(0,0)
+        self.setDefaultTextColor(QColor(255,255,255))
+        self.setFont(QFont("Arial", 12))
+        self.setZValue(1)
+
+    def updateText(self, items):
+        self.setPlainText("Current Items: ")
+        for item in items:
+            self.setPlainText(self.toPlainText() + "\n" + item.svg_file)
