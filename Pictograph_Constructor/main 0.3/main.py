@@ -10,7 +10,7 @@ from buttonhandlers import Button_Handlers
 
 
 class Main_Window(QWidget):
-    ARROW_DIR = 'images\\arrows'
+    ARROW_DIR = 'images\\arrows\\blue'
     SVG_SCALE = 9.0
     SVG_POS_Y_INCREMENT = 200
 
@@ -37,7 +37,8 @@ class Main_Window(QWidget):
         self.setWindowTitle('Drag & Drop')
         self.show()
 
-    def initArrowBox(self): 
+    def initArrowBox(self):
+            
         arrow_box = QScrollArea(self)  
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
