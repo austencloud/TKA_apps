@@ -68,13 +68,13 @@ class Arrow_Logic(QGraphicsSvgItem):
             mouse_pos = self.artboard.mapToScene(self.artboard.mapFromGlobal(QCursor.pos()))
 
             # Determine the quadrant of the scene the arrow is in
-            if mouse_pos.y() < self.scene().height() / 2:
-                if mouse_pos.x() < self.scene().width() / 2:
+            if mouse_pos.y() < self.artboard().height() / 2:
+                if mouse_pos.x() < self.artboard().width() / 2:
                     quadrant = 'nw'
                 else:
                     quadrant = 'ne'
             else:
-                if mouse_pos.x() < self.scene().width() / 2:
+                if mouse_pos.x() < self.artboard().width() / 2:
                     quadrant = 'sw'
                 else:
                     quadrant = 'se'

@@ -19,47 +19,33 @@ class Main_Window(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setGeometry(300, 300, 1800, 1400)  
+        vbox = QVBoxLayout()
         hbox = QHBoxLayout()
 
-        arrow_box = self.initArrowBox()
-        hbox.addWidget(arrow_box)
-
-        self.view = self.initArtboard()
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.view)
-
-        self.initButtons(vbox)
+        self.setGeometry(300, 300, 1800, 1400)  
+        arrowbox = self.initArrowBox()
+        artboard = self.initArtboard()
+        hbox.addWidget(arrowbox)
+        vbox.addWidget(artboard)
 
         hbox.addLayout(vbox)
-
         self.setLayout(hbox)
         self.setWindowTitle('Drag & Drop')
+        self.initButtons(vbox)
         self.show()
 
     def initArrowBox(self):
-        arrow_box = QScrollArea(self)
+        arrowbox = QScrollArea(self)
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
-
-        # Create a QGraphicsScene
         self.artboard = QGraphicsScene()
-        # Create a new QGraphicsScene for the QGraphicsView in the scroll area
         arrowbox = QGraphicsScene()
-
-        # Get the full paths
         svgs_full_paths = []
+        default_arrows = ['red_anti_r_ne.svg', 'red_iso_r_ne.svg', 'blue_anti_r_sw.svg', 'blue_iso_r_sw.svg']
+        svg_item_count = 0
+
         for dirpath, dirnames, filenames in os.walk(self.ARROW_DIR):
             svgs_full_paths.extend([os.path.join(dirpath, filename) for filename in filenames if filename.endswith('.svg')])
-
-        # Get just the filenames
-        svgs_filenames = [os.path.basename(svg) for svg in svgs_full_paths]
-
-        # List of default arrow names
-        default_arrows = ['red_anti_r_ne.svg', 'red_iso_r_ne.svg', 'blue_anti_r_sw.svg', 'blue_iso_r_sw.svg']
-
-        # Counter for the number of SVG items added
-        svg_item_count = 0
 
         for i, svg in enumerate(svgs_full_paths):
             file_name = os.path.basename(svg)
@@ -72,58 +58,39 @@ class Main_Window(QWidget):
                 arrowbox.addItem(svg_item)
                 svg_item_count += 1
 
-        # Use arrowbox for the QGraphicsView in the scroll area
         view = QGraphicsView(arrowbox)
-
-        # Add the QGraphicsView to the layout
         scroll_layout.addWidget(view)
-
         scroll_widget.setLayout(scroll_layout)
-        arrow_box.setWidget(scroll_widget)
-        arrow_box.setWidgetResizable(True)
+        arrowbox.setWidget(scroll_widget)
+        arrowbox.setWidgetResizable(True)
 
-        return arrow_box
+        return arrowbox
 
     def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
+
         view = Artboard_Events(self.artboard, self.grid)
-
-        # Set the size of the artboard to a fixed amount
-        view.setFixedSize(600, 600)
-
-        # Calculate the center of the frame
         frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
+        transform = QTransform()
+        line_v = QGraphicsLineItem(view.frameSize().width() / 2, 0, view.frameSize().width() / 2, view.frameSize().height())
+        line_h = QGraphicsLineItem(0, view.frameSize().height() / 2, view.frameSize().width(), view.frameSize().height() / 2)
 
-        # Show a blue dot at the frame center
-        # center = QGraphicsEllipseItem(QRectF(frame_center.x() - 10, frame_center.y() - 10, 20, 20))
-        # center.setBrush(QBrush(QColor(0, 0, 255)))
-        # self.artboard.addItem(center)
-        # center.setZValue(1)
-
-        # disable the scrollbars
+        view.setFixedSize(600, 600)
         view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        # Add the grid to the artboard
-        self.artboard.addItem(self.grid)
-
-        # Create a transformation matrix that translates the grid to the center of the frame and then scales it by a factor of 8
-        transform = QTransform()
         transform.translate(frame_center.x() - 260, frame_center.y() - 260)
-
-        # Apply the transformation matrix to the grid
         self.grid.setTransform(transform)
 
-        # Add lines to demarcate the quadrants
-        line_v = QGraphicsLineItem(view.frameSize().width() / 2, 0, view.frameSize().width() / 2, view.frameSize().height())
-        line_h = QGraphicsLineItem(0, view.frameSize().height() / 2, view.frameSize().width(), view.frameSize().height() / 2)
+        self.artboard.addItem(self.grid)
         self.artboard.addItem(line_v)
         self.artboard.addItem(line_h)
 
         return view
 
-
     def initButtons(self, layout):
+        handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard)
+
         masterbtnlayout = QVBoxLayout()
         buttonlayout = QHBoxLayout()
         buttonstack1 = QVBoxLayout()
@@ -135,11 +102,8 @@ class Main_Window(QWidget):
 
         buttonlayout.addLayout(buttonstack1)
         buttonlayout.addLayout(buttonstack2)
-
         masterbtnlayout.addLayout(buttonlayout)
         layout.addLayout(masterbtnlayout)
-
-        handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard)
 
         self.deleteButton = QPushButton("Delete")
         self.deleteButton.clicked.connect(handlers.deleteArrow)
