@@ -64,7 +64,7 @@ class Main_Window(QWidget):
         for i, svg in enumerate(svgs_full_paths):
             file_name = os.path.basename(svg)
             if file_name in default_arrows:
-                svg_item = Arrow_Logic(svg)
+                svg_item = Arrow_Logic(svg, arrowbox)
                 svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
                 svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
                 svg_item.setScale(self.SVG_SCALE)

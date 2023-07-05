@@ -1,19 +1,19 @@
 from PyQt5.QtWidgets import QApplication, QGraphicsItem
-from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QBrush, QColor, QPen, QBrush, QColor
+from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QCursor
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
-from PyQt5.QtWidgets import QGraphicsEllipseItem
 import os
 
 class Arrow_Logic(QGraphicsSvgItem):
-    def __init__(self, svg_file):
+    def __init__(self, svg_file, artboard):
         super().__init__(svg_file)
         self.setAcceptDrops(True)
         self.svg_file = svg_file
         self.in_drop_frame = False
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
 
-        # Define the grid and dot attributes
+        # Store the reference to the artboard
+        self.artboard = artboard
         self.grid = None
         self.dot = None
 
@@ -65,7 +65,7 @@ class Arrow_Logic(QGraphicsSvgItem):
             return
         else:
             # Determine the current mouse position relative to the artboard
-            mouse_pos = self.mapFromScene(event.scenePos())
+            mouse_pos = self.artboard.mapToScene(self.artboard.mapFromGlobal(QCursor.pos()))
 
             # Determine the quadrant of the scene the arrow is in
             if mouse_pos.y() < self.scene().height() / 2:
