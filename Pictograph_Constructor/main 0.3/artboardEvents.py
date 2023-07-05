@@ -13,7 +13,7 @@ class Artboard_Events(QGraphicsView):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)
         self.dragging = None
-        self.grid = grid 
+        self.grid = grid
 
         self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setInteractive(True)

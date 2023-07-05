@@ -63,16 +63,17 @@ class Arrow_Logic(QGraphicsSvgItem):
             return
         else:
             mouse_pos = self.artboard.mapToScene(self.artboard.mapFromGlobal(QCursor.pos()))
-            if mouse_pos.y() < self.artboard().height() / 2:
-                if mouse_pos.x() < self.artboard().width() / 2:
+            if mouse_pos.y() < self.artboard.viewport().height() / 2:
+                if mouse_pos.x() < self.artboard.viewport().width() / 2:
                     quadrant = 'nw'
                 else:
                     quadrant = 'ne'
             else:
-                if mouse_pos.x() < self.artboard().width() / 2:
+                if mouse_pos.x() < self.artboard.viewport().width() / 2:
                     quadrant = 'sw'
                 else:
                     quadrant = 'se'
+
 
             base_name = os.path.basename(self.svg_file)
 

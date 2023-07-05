@@ -15,31 +15,29 @@ class Main_Window(QWidget):
     SVG_POS_Y = 225
 
     def __init__(self):
-        super().__init__()
+        super().__init__() 
         self.initUI()
 
     def initUI(self):
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
-
+        self.artboard = QGraphicsScene()
         self.setGeometry(300, 300, 1800, 1400)  
-        arrowbox = self.initArrowBox()
-        artboard = self.initArtboard()
-        hbox.addWidget(arrowbox)
-        vbox.addWidget(artboard)
         self.view = self.initArtboard()
+        arrowbox = self.initArrowBox()
+        vbox.addWidget(self.view)
+        hbox.addWidget(arrowbox)
         hbox.addLayout(vbox)
         self.setLayout(hbox)
         self.setWindowTitle('Drag & Drop')
-        self.initButtons(vbox)
         self.show()
+        self.initButtons(vbox)
 
     def initArrowBox(self):
         arrow_box = QScrollArea(self)
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
-        self.artboard = QGraphicsScene()
-        arrowbox_scene = QGraphicsScene()  # renamed to avoid overwriting
+        arrowbox_scene = QGraphicsScene()  # Use a separate scene for the arrow box
         svgs_full_paths = []
         default_arrows = ['red_anti_r_ne.svg', 'red_iso_r_ne.svg', 'blue_anti_r_sw.svg', 'blue_iso_r_sw.svg']
         svg_item_count = 0
@@ -63,9 +61,9 @@ class Main_Window(QWidget):
         scroll_widget.setLayout(scroll_layout)
         arrow_box.setWidget(scroll_widget)
         arrow_box.setWidgetResizable(True)
-        
+
         return arrow_box
-    
+
     def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
         view = Artboard_Events(self.artboard, self.grid)
@@ -111,20 +109,25 @@ class Main_Window(QWidget):
         buttonstack1.addWidget(self.deleteButton)
 
         self.rotateRightButton = QPushButton("Rotate Right")
-        self.rotateRightButton.clicked.connect(lambda: handlers.rotateArrow(90)) # 90 degrees clockwise
+        self.rotateRightButton.clicked.connect(lambda: handlers.rotateArrow("right"))
         buttonstack1.addWidget(self.rotateRightButton)
 
         self.rotateLeftButton = QPushButton("Rotate Left")
-        self.rotateLeftButton.clicked.connect(lambda: handlers.rotateArrow(-90)) # 90 degrees counterclockwise
+        self.rotateLeftButton.clicked.connect(lambda: handlers.rotateArrow("left"))
         buttonstack1.addWidget(self.rotateLeftButton)
 
         self.mirrorButton = QPushButton("Mirror")
-        self.mirrorButton.clicked.connect(lambda: handlers.mirrorArrow()) # Mirror horizontally
+        self.mirrorButton.clicked.connect(lambda: handlers.mirrorArrow())
         buttonstack2.addWidget(self.mirrorButton)
 
         self.bringForward = QPushButton("Bring Forward")
         self.bringForward.clicked.connect(handlers.bringForward)
         buttonstack2.addWidget(self.bringForward)
+
+        #implement a swap colors button and connect it to the function in eventhandlers
+        self.swapColors = QPushButton("Swap Colors")
+        self.swapColors.clicked.connect(handlers.swapColors)
+        buttonstack2.addWidget(self.swapColors)
 
         self.exportButton = QPushButton("Export to PNG")
         self.exportButton.clicked.connect(handlers.exportArtboard)
@@ -135,7 +138,9 @@ class Main_Window(QWidget):
         self.rotateLeftButton.setFont(QFont('Helvetica', 14))
         self.mirrorButton.setFont(QFont('Helvetica', 14))
         self.bringForward.setFont(QFont('Helvetica', 14))
+        self.swapColors.setFont(QFont('Helvetica', 14))
         self.exportButton.setFont(QFont('Helvetica', 14))
+
 
 app = QApplication(sys.argv)
 ex = Main_Window()
