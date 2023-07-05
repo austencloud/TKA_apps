@@ -6,30 +6,21 @@ class Grid(QGraphicsSvgItem):
     def __init__(self, grid_svg):
         super().__init__(grid_svg)
 
-        # Parse the SVG file
         self.doc = minidom.parse(grid_svg)
-
-        # Find all circle elements in the SVG file
         circles = self.doc.getElementsByTagName('circle')
 
-        # Find the circle with the id "center_point"
         center_point_circle = None
         for circle in circles:
             if circle.getAttribute('id') == "center_point":
                 center_point_circle = circle
                 break
-
         if center_point_circle is None:
             raise ValueError("No circle with id 'center_point' found in SVG file")
 
-        # Get the center point of the circle
         center_x = float(center_point_circle.getAttribute('cx'))
         center_y = float(center_point_circle.getAttribute('cy'))
 
-        # Store the center point as an attribute
         self.center_point = QPointF(center_x, center_y)
-
-        # Scale the item by a factor of 8
         self.setScale(8.0)
 
     def getCenter(self):

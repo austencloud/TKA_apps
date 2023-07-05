@@ -1,8 +1,8 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QGraphicsEllipseItem, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem
-from PyQt5.QtCore import QRectF, QPointF, Qt
-from PyQt5.QtGui import QBrush, QColor, QTransform, QFont
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem
+from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtGui import QTransform, QFont
 from arrows import Arrow_Logic
 from artboardEvents import Artboard_Events
 from buttonHandlers import Button_Handlers
@@ -27,7 +27,7 @@ class Main_Window(QWidget):
         artboard = self.initArtboard()
         hbox.addWidget(arrowbox)
         vbox.addWidget(artboard)
-
+        self.view = self.initArtboard()
         hbox.addLayout(vbox)
         self.setLayout(hbox)
         self.setWindowTitle('Drag & Drop')
@@ -35,11 +35,11 @@ class Main_Window(QWidget):
         self.show()
 
     def initArrowBox(self):
-        arrowbox = QScrollArea(self)
+        arrow_box = QScrollArea(self)
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
         self.artboard = QGraphicsScene()
-        arrowbox = QGraphicsScene()
+        arrowbox_scene = QGraphicsScene()  # renamed to avoid overwriting
         svgs_full_paths = []
         default_arrows = ['red_anti_r_ne.svg', 'red_iso_r_ne.svg', 'blue_anti_r_sw.svg', 'blue_iso_r_sw.svg']
         svg_item_count = 0
@@ -50,37 +50,38 @@ class Main_Window(QWidget):
         for i, svg in enumerate(svgs_full_paths):
             file_name = os.path.basename(svg)
             if file_name in default_arrows:
-                svg_item = Arrow_Logic(svg, arrowbox)
+                svg_item = Arrow_Logic(svg, self.view)  # pass the QGraphicsView object here
                 svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
                 svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
                 svg_item.setScale(self.SVG_SCALE)
                 svg_item.setPos(0, svg_item_count * self.SVG_POS_Y)
-                arrowbox.addItem(svg_item)
+                arrowbox_scene.addItem(svg_item)  # use arrowbox_scene here
                 svg_item_count += 1
 
-        view = QGraphicsView(arrowbox)
+        view = QGraphicsView(arrowbox_scene)  # use arrowbox_scene here
         scroll_layout.addWidget(view)
         scroll_widget.setLayout(scroll_layout)
-        arrowbox.setWidget(scroll_widget)
-        arrowbox.setWidgetResizable(True)
-
-        return arrowbox
-
+        arrow_box.setWidget(scroll_widget)
+        arrow_box.setWidgetResizable(True)
+        
+        return arrow_box
+    
     def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
-
         view = Artboard_Events(self.artboard, self.grid)
-        frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
-        transform = QTransform()
-        line_v = QGraphicsLineItem(view.frameSize().width() / 2, 0, view.frameSize().width() / 2, view.frameSize().height())
-        line_h = QGraphicsLineItem(0, view.frameSize().height() / 2, view.frameSize().width(), view.frameSize().height() / 2)
-
         view.setFixedSize(600, 600)
-        view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        transform = QTransform()
+        frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
 
         transform.translate(frame_center.x() - 260, frame_center.y() - 260)
         self.grid.setTransform(transform)
+
+        line_v = QGraphicsLineItem(view.frameSize().width() / 2, 0, view.frameSize().width() / 2, view.frameSize().height())
+        line_h = QGraphicsLineItem(0, view.frameSize().height() / 2, view.frameSize().width(), view.frameSize().height() / 2)
+
+        view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.artboard.addItem(self.grid)
         self.artboard.addItem(line_v)
