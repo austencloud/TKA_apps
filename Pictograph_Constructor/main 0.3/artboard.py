@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraph
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, QMimeData, QPointF, QRectF
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
-from arrows import Objects_From_Sidebar
+from arrows import Arrow_Logic
 from xml.dom import minidom
 from PyQt5.QtGui import QPen, QBrush, QColor
 from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsItemGroup
@@ -17,8 +17,6 @@ class Artboard(QGraphicsView):
         self.dragging = None
         self.grid = grid 
 
-
-        
         # Set the drag mode to QGraphicsView::RubberBandDrag
         self.setDragMode(QGraphicsView.RubberBandDrag)
 
@@ -56,7 +54,7 @@ class Artboard(QGraphicsView):
             dropped_svg = event.mimeData().text()
 
             # Create a new DraggableSvg item
-            arrow_item = Objects_From_Sidebar(dropped_svg)
+            arrow_item = Arrow_Logic(dropped_svg)
             arrow_item.setScale(8.0)
 
             # Add the new DraggableSvg item to the scene at the drop location
@@ -106,78 +104,3 @@ class Artboard(QGraphicsView):
         self.setRubberBandSelectionMode(Qt.ContainsItemShape)
         self.setRubberBandSelectionMode(Qt.IntersectsItemShape)
         super().mouseReleaseEvent(event)
-
-class Artboard_Objects(QGraphicsPixmapItem):
-    id_counter = 0
-
-    def __init__(self, svg_path: str):
-        self.svg_path = svg_path
-        self.svg_renderer = QSvgRenderer(svg_path)
-        self.highlighted_svg_renderer = QSvgRenderer(svg_path)
-
-        original_size = self.svg_renderer.defaultSize()
-        scale_factor = min(200 / original_size.width(), 200 / original_size.height())
-
-        # Create the original pixmap
-        image = QImage(int(original_size.width() * scale_factor), int(original_size.height() * scale_factor), QImage.Format_ARGB32)
-        painter = QPainter(image)
-        self.svg_renderer.render(painter)
-        painter.end()
-        pixmap = QPixmap.fromImage(image)
-        super().__init__(pixmap)
-
-
-        # Create the highlighted pixmap
-        highlighted_image = QImage(200, 200, QImage.Format_ARGB32)
-        highlighted_painter = QPainter(highlighted_image)
-        self.highlighted_svg_renderer.render(highlighted_painter)
-        highlighted_painter.end()  # <-- End the highlighted painter's session
-        self.highlighted_pixmap = QPixmap.fromImage(highlighted_image)
-        super().__init__(pixmap)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.id = Artboard_Objects.id_counter
-        Artboard_Objects.id_counter += 1
-        self.Artboard_Objects_start_position = None
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.setVisible(False)  # hide original item
-            views = self.scene().views()
-            
-            if views:
-                if self.Artboard_Objects_start_position is None:  # this is for Artboard_Objectsging copied items
-                    self.Artboard_Objects_start_position = event.pos() - self.boundingRect().topLeft()
-                
-                Artboard_Objects = Artboard_Objects(views[0])  # Use the first QGraphicsView as the parent
-                Artboard_Objects.setHotSpot(self.Artboard_Objects_start_position.toPoint())
-                mimedata = QMimeData()
-
-                pixmap = self.pixmap()
-                mimedata.setImageData(pixmap.toImage())
-                mimedata.setText(str(self.id))
-
-                Artboard_Objects.setMimeData(mimedata)
-
-                pixmap_scaled = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                Artboard_Objects.setPixmap(pixmap_scaled)
-
-                self.Artboard_Objects_start_position = event.pos() - self.boundingRect().topLeft()
-                Artboard_Objects.setHotSpot(self.Artboard_Objects_start_position.toPoint())
-
-                Artboard_Objects.exec_(Qt.CopyAction)  # Execute the Artboard_Objects action
-            else:
-                return  # Do nothing if there are no views
-                items = self.items(event.pos())
-                
-
-
-    def paint(self, painter, option, widget):
-        super().paint(painter, option, widget)
-
-        if self.isSelected():
-            pen = QPen(Qt.red, 3, Qt.DashDotLine)
-            painter.setPen(pen)
-            painter.drawRect(self.boundingRect())
-
-

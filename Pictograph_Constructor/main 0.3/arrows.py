@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QGraphicsEllipseItem
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtGui import QPen, QBrush, QColor
 
-class Objects_From_Sidebar(QGraphicsSvgItem):
+class Arrow_Logic(QGraphicsSvgItem):
     def __init__(self, svg_file):
         super().__init__(svg_file)
         self.setAcceptDrops(True)

@@ -2,11 +2,12 @@ import os
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QGraphicsEllipseItem, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
 from PyQt5.QtCore import QRectF, QPointF, Qt
-
-from PyQt5.QtGui import QPen, QBrush, QColor
-from arrows import Objects_From_Sidebar
+from PyQt5.QtGui import QPen, QBrush, QColor, QTransform
+from arrows import Arrow_Logic
 from artboard import Artboard, Grid
 from buttonhandlers import Button_Handlers
+
+
 
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
@@ -37,6 +38,7 @@ class Main_Window(QWidget):
         self.show()
 
     def initArrowBox(self):
+
         arrow_box = QScrollArea(self)  
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
@@ -50,7 +52,7 @@ class Main_Window(QWidget):
 
         for i, svg in enumerate(svgs):
             # Create a DraggableSvg instance
-            svg_item = Objects_From_Sidebar(svg)
+            svg_item = Arrow_Logic(svg)
             svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
             svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
             # Scale the SVG item
@@ -71,60 +73,65 @@ class Main_Window(QWidget):
         arrow_box.setWidgetResizable(True)
 
         return arrow_box
-
+    
     def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
         view = Artboard(self.artboard, self.grid)
 
-        view.setSceneRect(QRectF(0, 0, view.width(), view.height()))
-        #disable the scroll bars and overflow
-        view.setHorizontalScrollBarPolicy(1)
-        view.setVerticalScrollBarPolicy(1)
-
-        #set size of the artboard to a fixed amount
+        # Set the size of the artboard to a fixed amount
         view.setFixedSize(1000, 1000)
 
         # Calculate the center of the frame
         frame_center = QPointF(view.frameSize().width() / 2, view.frameSize().height() / 2)
-        print(frame_center)
-        #show a blue dot at the frame center
-        center = QGraphicsEllipseItem(QRectF(frame_center.x() - 5, frame_center.y() - 5, 10, 10))
-        center.setBrush(QBrush(QColor(0, 0, 255)))
-        self.artboard.addItem(center)        
 
-        #add the grid at the very center of the artboard using the 
-        self.grid.setPos(frame_center.x() - self.grid.boundingRect().width() / 2, frame_center.y() - self.grid.boundingRect().height() / 2)
+        # Show a blue dot at the frame center
+        center = QGraphicsEllipseItem(QRectF(frame_center.x(), frame_center.y(), 20, 20))
+        center.setBrush(QBrush(QColor(0, 0, 255)))
+        self.artboard.addItem(center)
+
+        # Add the grid to the artboard
         self.artboard.addItem(self.grid)
 
+        # Create a transformation matrix that translates the grid to the center of the frame and then scales it by a factor of 8
+        transform = QTransform()
+        transform.translate(frame_center.x() - 250, frame_center.y() - 250)
+
+        # Apply the transformation matrix to the grid
+        self.grid.setTransform(transform)
+
+        # store the resulting grid location in a variable
+        grid_location = self.grid.mapToScene(0, 0)
+        print("grid location: ", grid_location)
 
         return view
 
+
     def initButtons(self, layout):
-        handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard)
+            handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard)
 
-        self.deleteButton = QPushButton("Delete Selected")
-        self.deleteButton.clicked.connect(handlers.deleteArrow)
-        layout.addWidget(self.deleteButton)
+            self.deleteButton = QPushButton("Delete Selected")
+            self.deleteButton.clicked.connect(handlers.deleteArrow)
+            layout.addWidget(self.deleteButton)
 
-        self.rotateRightButton = QPushButton("Rotate Right")
-        self.rotateRightButton.clicked.connect(lambda: handlers.rotateArrow(90)) # 90 degrees clockwise
-        layout.addWidget(self.rotateRightButton)
+            self.rotateRightButton = QPushButton("Rotate Right")
+            self.rotateRightButton.clicked.connect(lambda: handlers.rotateArrow(90)) # 90 degrees clockwise
+            layout.addWidget(self.rotateRightButton)
 
-        self.rotateLeftButton = QPushButton("Rotate Left")
-        self.rotateLeftButton.clicked.connect(lambda: handlers.rotateArrow(-90)) # 90 degrees counterclockwise
-        layout.addWidget(self.rotateLeftButton)
+            self.rotateLeftButton = QPushButton("Rotate Left")
+            self.rotateLeftButton.clicked.connect(lambda: handlers.rotateArrow(-90)) # 90 degrees counterclockwise
+            layout.addWidget(self.rotateLeftButton)
 
-        self.mirrorHorizontallyButton = QPushButton("Mirror Horizontally")
-        self.mirrorHorizontallyButton.clicked.connect(lambda: handlers.mirrorArrow(True)) # Mirror horizontally
-        layout.addWidget(self.mirrorHorizontallyButton)
+            self.mirrorHorizontallyButton = QPushButton("Mirror Horizontally")
+            self.mirrorHorizontallyButton.clicked.connect(lambda: handlers.mirrorArrow(True)) # Mirror horizontally
+            layout.addWidget(self.mirrorHorizontallyButton)
 
-        self.mirrorVerticallyButton = QPushButton("Mirror Vertically")
-        self.mirrorVerticallyButton.clicked.connect(lambda: handlers.mirrorArrow(False)) # Mirror vertically
-        layout.addWidget(self.mirrorVerticallyButton)
+            self.mirrorVerticallyButton = QPushButton("Mirror Vertically")
+            self.mirrorVerticallyButton.clicked.connect(lambda: handlers.mirrorArrow(False)) # Mirror vertically
+            layout.addWidget(self.mirrorVerticallyButton)
 
-        self.exportButton = QPushButton("Export to PNG")
-        self.exportButton.clicked.connect(handlers.exportArtboard)
-        layout.addWidget(self.exportButton)
+            self.exportButton = QPushButton("Export to PNG")
+            self.exportButton.clicked.connect(handlers.exportArtboard)
+            layout.addWidget(self.exportButton)
 
 
 app = QApplication(sys.argv)

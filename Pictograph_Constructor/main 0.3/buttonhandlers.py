@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QImage, QPainter, QBrush, QPen, QPolygonF, QPolygon, QColor
+from PyQt5.QtGui import QImage, QPainter, QBrush, QPen, QPolygonF, QPolygon, QColor, QTransform
 from PyQt5.QtCore import Qt
 
 class Button_Handlers:
@@ -11,20 +11,25 @@ class Button_Handlers:
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             self.deleteArrow()
-
     def rotateArrow(self, angle):
         if self.view.grid is not None:
             grid_center_scene = self.view.grid.getCenter()
 
             for item in self.scene.selectedItems():
-                grid_center_local = item.mapFromScene(grid_center_scene)
+                # Create a transformation matrix
+                transform = QTransform()
 
-                #show a red dot at the center of the grid
-                self.dot = self.scene.addEllipse(grid_center_scene.x() - 5, grid_center_scene.y() - 5, 10, 10, QPen(Qt.red), QBrush(Qt.red))
-                #set the transform oigin around the center of the grid:
-                item.setTransformOriginPoint(grid_center_local)
-                item.setRotation(item.rotation() + angle)
+                # Translate the item to the origin
+                transform.translate(-grid_center_scene.x(), -grid_center_scene.y())
 
+                # Rotate the item
+                transform.rotate(angle)
+
+                # Translate the item back
+                transform.translate(grid_center_scene.x(), grid_center_scene.y())
+
+                # Apply the transformation matrix to the item
+                item.setTransform(transform, combine=True)
 
     def mirrorArrow(self, horizontal=True):
         for item in self.artboard.selectedItems():

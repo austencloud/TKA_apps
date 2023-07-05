@@ -29,9 +29,6 @@ class Grid(QGraphicsSvgItem):
         # Store the center point as an attribute
         self.center_point = QPointF(center_x, center_y)
 
-        #print the center point coordinates
-        print("center point of the grid: ", self.center_point)
-
         # Scale the item by a factor of 8
         self.setScale(8.0)
 
