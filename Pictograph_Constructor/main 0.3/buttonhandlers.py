@@ -11,25 +11,19 @@ class Button_Handlers:
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             self.deleteArrow()
+
     def rotateArrow(self, angle):
         if self.view.grid is not None:
             grid_center_scene = self.view.grid.getCenter()
-
             for item in self.scene.selectedItems():
-                # Create a transformation matrix
-                transform = QTransform()
+                # Get the grid's center in the item's local coordinate            
+                grid_center_item = item.mapFromScene(grid_center_scene)
 
-                # Translate the item to the origin
-                transform.translate(-grid_center_scene.x(), -grid_center_scene.y())
+                # Set the transform origin point to the grid's center
+                item.setTransformOriginPoint(grid_center_item)
 
                 # Rotate the item
-                transform.rotate(angle)
-
-                # Translate the item back
-                transform.translate(grid_center_scene.x(), grid_center_scene.y())
-
-                # Apply the transformation matrix to the item
-                item.setTransform(transform, combine=True)
+                item.setRotation(item.rotation() + angle)
 
     def mirrorArrow(self, horizontal=True):
         for item in self.artboard.selectedItems():

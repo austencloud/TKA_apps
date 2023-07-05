@@ -37,8 +37,7 @@ class Main_Window(QWidget):
         self.setWindowTitle('Drag & Drop')
         self.show()
 
-    def initArrowBox(self):
-
+    def initArrowBox(self): 
         arrow_box = QScrollArea(self)  
         scroll_widget = QWidget(self)
         scroll_layout = QVBoxLayout()
