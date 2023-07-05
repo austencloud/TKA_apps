@@ -39,9 +39,15 @@ class Button_Handlers:
             self.artboard.removeItem(item)
 
     def exportArtboard(self):
+        #get a list of all selected items
+        selectedItems = self.artboard.selectedItems()
+
+        #deselect the items in that list
+        for item in selectedItems:
+            item.setSelected(False)
+
         # Create a QImage with the same dimensions as the QGraphicsView
         image = QImage(self.view.size(), QImage.Format_ARGB32)
-
         # Create a QPainter and draw the QGraphicsView's artboard into the QImage
         painter = QPainter(image)
         self.view.render(painter)
@@ -50,3 +56,13 @@ class Button_Handlers:
         # Save the QImage to a file
         image.save("export.png")
 
+        #reselect the items that were already selected
+        for item in selectedItems:
+            item.setSelected(True)
+
+    def bringForward(self):
+        for item in self.artboard.selectedItems():
+            #get the current z value
+            z = item.zValue()
+            #increment that z value up by one
+            item.setZValue(z + 1)

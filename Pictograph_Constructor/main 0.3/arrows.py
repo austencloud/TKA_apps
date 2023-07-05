@@ -66,23 +66,38 @@ class Arrow_Logic(QGraphicsSvgItem):
         path = QPainterPath()
         path.addRect(self.renderer().boundsOnElement(self.elementId()))
         return path
+    
+    # need to modify this so it can access the svgs instead of usig pixmap
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange and self.grid is not None:
-            # Get the center of the grid
-            grid_center = self.grid.getCenter()
+    # def itemChange(self, change, value):
+    #     if change == QGraphicsItem.ItemPositionChange and self.grid is not None:
+    #         # Get the position of the arrow in the scene
+    #         pos = self.scenePos()
 
-            # Convert the center of the grid from scene coordinates to item coordinates
-            local_grid_center = self.mapFromScene(grid_center)
+    #         # Determine the quadrant of the grid the arrow is in
+    #         if pos.y() < self.scene().height() / 2:
+    #             if pos.x() < self.scene().width() / 2:
+    #                 quadrant = 'nw'
+    #             else:
+    #                 quadrant = 'ne'
+    #         else:
+    #             if pos.x() < self.scene().width() / 2:
+    #                 quadrant = 'sw'
+    #             else:
+    #                 quadrant = 'se'
 
-            # Set the transformation origin point to the grid's center
-            self.setTransformOriginPoint(local_grid_center)
+    #         # Replace the arrow with the corresponding form
+    #         if self.filename.startswith('red_anti'):
+    #             self.setPixmap(QPixmap('images\\arrows\\red_anti_r_' + quadrant + '.svg'))
+    #         elif self.filename.startswith('red_iso'):
+    #             self.setPixmap(QPixmap('images\\arrows\\red_iso_r_' + quadrant + '.svg'))
+    #         elif self.filename.startswith('blue_anti'):
+    #             self.setPixmap(QPixmap('images\\arrows\\blue_anti_r_' + quadrant + '.svg'))
+    #         elif self.filename.startswith('blue_iso'):
+    #             self.setPixmap(QPixmap('images\\arrows\\blue_iso_r_' + quadrant + '.svg'))
 
-            # Update the red dot
-            self.updateRedDot()
-
-        return super().itemChange(change, value)
-
+    #     return super().itemChange(change, value)
+    
     def updateRedDot(self):
         # Remove the old red dot
         if self.dot is not None:
@@ -90,16 +105,15 @@ class Arrow_Logic(QGraphicsSvgItem):
 
         # Add a new red dot at the transformation origin point
         if self.grid is not None:
+
             # Get the transformation origin point in the local coordinates of the arrow
-            local_grid_center = self.mapFromScene(self.grid.getCenter())
+            local_origin = self.mapFromScene(self.transformOriginPoint())
 
             # Convert the transformation origin point to scene coordinates
-            scene_grid_center = self.mapToScene(local_grid_center)
+            scene_origin = self.mapToScene(local_origin)
 
             # Create the red dot at the transformation origin point in scene coordinates
-            self.dot = RedDot(scene_grid_center, radius=2)
-            self.scene().addItem(self.dot)
-
+            self.dot = RedDot(scene_origin)
 
 
 class RedDot(QGraphicsEllipseItem):
