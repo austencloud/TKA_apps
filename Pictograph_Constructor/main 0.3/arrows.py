@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QBrush, 
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsEllipseItem
-
+import os
 
 class Arrow_Logic(QGraphicsSvgItem):
     def __init__(self, svg_file):
@@ -17,12 +17,20 @@ class Arrow_Logic(QGraphicsSvgItem):
         self.grid = None
         self.dot = None
 
+        # Determine the initial orientation based on the SVG file path
+        if "_l_" in svg_file:
+            self.orientation = "l"
+        elif "_r_" in svg_file:
+            self.orientation = "r"
+        else:
+            print("Unexpected svg_file:", svg_file)
+            self.orientation = "r"  # use "r" as a fallback
+
         if "grid" not in svg_file:
             self.setFlag(QGraphicsSvgItem.ItemIsMovable, True)
             self.setFlag(QGraphicsSvgItem.ItemIsSelectable, True)
             self.setTransformOriginPoint(self.boundingRect().center())
-
-
+            
     def mousePressEvent(self, event):
         self.dragOffset = event.pos() - self.boundingRect().center()
         if self.in_drop_frame:
@@ -56,6 +64,55 @@ class Arrow_Logic(QGraphicsSvgItem):
         elif (event.pos() - self.Drop_Frame_Objects_start_position).manhattanLength() < QApplication.startDragDistance():
             return
         else:
+            # Determine the current mouse position relative to the artboard
+            mouse_pos = self.mapFromScene(event.scenePos())
+
+            # Determine the quadrant of the scene the arrow is in
+            if mouse_pos.y() < self.scene().height() / 2:
+                if mouse_pos.x() < self.scene().width() / 2:
+                    quadrant = 'nw'
+                else:
+                    quadrant = 'ne'
+            else:
+                if mouse_pos.x() < self.scene().width() / 2:
+                    quadrant = 'sw'
+                else:
+                    quadrant = 'se'
+
+            # Get the base name of the file path
+            base_name = os.path.basename(self.svg_file)
+
+            # Replace the arrow with the corresponding form
+            if base_name.startswith('red_anti'):
+                new_svg = f'images\\arrows\\red\\{self.orientation}\\anti\\red_anti_{self.orientation}_{quadrant}.svg'
+            elif base_name.startswith('red_iso'):
+                new_svg = f'images\\arrows\\red\\{self.orientation}\\iso\\red_iso_{self.orientation}_{quadrant}.svg'
+            elif base_name.startswith('blue_anti'):
+                new_svg = f'images\\arrows\\blue\\{self.orientation}\\anti\\blue_anti_{self.orientation}_{quadrant}.svg'
+            elif base_name.startswith('blue_iso'):
+                new_svg = f'images\\arrows\\blue\\{self.orientation}\\iso\\blue_iso_{self.orientation}_{quadrant}.svg'
+            else:
+                print(f"Unexpected svg_file: {self.svg_file}")
+                new_svg = self.svg_file  # use the current svg file as a fallback
+
+            # Create a new QSvgRenderer
+            new_renderer = QSvgRenderer(new_svg)
+
+            # Check if the new renderer is valid
+            if new_renderer.isValid():
+                # Create a new QPixmap and QPainter
+                pixmap = QPixmap(self.drag.pixmap().size())
+                painter = QPainter(pixmap)
+
+                # Render the new SVG file onto the QPixmap
+                new_renderer.render(painter)
+
+                # End the QPainter operation
+                painter.end()
+
+                # Set the new QPixmap as the pixmap of the drag object
+                self.drag.setPixmap(pixmap)
+
             self.drag.exec_(Qt.CopyAction | Qt.MoveAction)
 
     def mouseReleaseEvent(self, event):
@@ -65,66 +122,3 @@ class Arrow_Logic(QGraphicsSvgItem):
         path = QPainterPath()
         path.addRect(self.renderer().boundsOnElement(self.elementId()))
         return path
-    
-    # need to modify this so it can access the svgs instead of usig pixmap
-
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange and self.grid is not None:
-            # Get the position of the arrow in the scene
-            pos = self.scenePos()
-
-            # Determine the quadrant of the grid the arrow is in
-            if pos.y() < self.scene().height() / 2:
-                if pos.x() < self.scene().width() / 2:
-                    quadrant = 'nw'
-                else:
-                    quadrant = 'ne'
-            else:
-                if pos.x() < self.scene().width() / 2:
-                    quadrant = 'sw'
-                else:
-                    quadrant = 'se'
-
-            # Replace the arrow with the corresponding form
-            if self.filename.startswith('red_anti'):
-                new_svg = 'images\\arrows\\red_anti_r_' + quadrant + '.svg'
-            elif self.filename.startswith('red_iso'):
-                new_svg = 'images\\arrows\\red_iso_r_' + quadrant + '.svg'
-            elif self.filename.startswith('blue_anti'):
-                new_svg = 'images\\arrows\\blue_anti_r_' + quadrant + '.svg'
-            elif self.filename.startswith('blue_iso'):
-                new_svg = 'images\\arrows\\blue_iso_r_' + quadrant + '.svg'
-
-            # Load the new SVG file and replace the current SVG item with a new one
-            self.setSharedRenderer(QSvgRenderer(new_svg))
-
-        return super().itemChange(change, value)
-
-    def updateRedDot(self):
-        # Remove the old red dot
-        if self.dot is not None:
-            self.scene().removeItem(self.dot)
-
-        # Add a new red dot at the transformation origin point
-        if self.grid is not None:
-
-            # Get the transformation origin point in the local coordinates of the arrow
-            local_origin = self.mapFromScene(self.transformOriginPoint())
-
-            # Convert the transformation origin point to scene coordinates
-            scene_origin = self.mapToScene(local_origin)
-
-            # Create the red dot at the transformation origin point in scene coordinates
-            self.dot = RedDot(scene_origin)
-
-
-class RedDot(QGraphicsEllipseItem):
-    def __init__(self, center, radius=5, parent=None):
-        super().__init__(parent)
-        self.setRect(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)
-
-        # Set the brush to solid red
-        self.setBrush(QBrush(QColor(255, 0, 0)))
-
-        # Set the pen to no pen (i.e., no stroke)
-        self.setPen(QPen(Qt.NoPen))

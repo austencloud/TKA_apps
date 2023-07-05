@@ -1,5 +1,6 @@
 from PyQt5.QtGui import QImage, QPainter, QBrush, QPen, QPolygonF, QPolygon, QColor, QTransform
 from PyQt5.QtCore import Qt
+from PyQt5.QtSvg import QSvgRenderer
 
 class Button_Handlers:
     def __init__(self, artboard, view, grid, scene):
@@ -25,14 +26,33 @@ class Button_Handlers:
                 # Rotate the item
                 item.setRotation(item.rotation() + angle)
 
-    def mirrorArrow(self, horizontal=True):
+    def mirrorArrow(self):
         for item in self.artboard.selectedItems():
-            if horizontal:
-                # Flip horizontally by applying a horizontal flip matrix
-                item.setTransform(item.transform().scale(-1, 1))
+            # Get the current SVG file name
+            current_svg = item.svg_file
+
+            # Determine the new SVG file name and orientation based on the current orientation
+            if item.orientation == "l":
+                new_svg = current_svg.replace("_l_", "_r_").replace("\\l\\", "\\r\\")
+                item.orientation = "r"
+            elif item.orientation == "r":
+                new_svg = current_svg.replace("_r_", "_l_").replace("\\r\\", "\\l\\")
+                item.orientation = "l"
             else:
-                # Flip vertically by applying a vertical flip matrix
-                item.setTransform(item.transform().scale(1, -1))
+                print("Unexpected svg_file:", current_svg)
+                continue
+
+            # Create a new QSvgRenderer
+            new_renderer = QSvgRenderer(new_svg)
+
+            # Check if the new renderer is valid
+            if new_renderer.isValid():
+                # If the new renderer is valid, set it as the shared renderer of the item
+                item.setSharedRenderer(new_renderer)
+                # Update the svg_file attribute of the item
+                item.svg_file = new_svg
+            else:
+                print("Failed to load SVG file:", new_svg)
 
     def deleteArrow(self):
         for item in self.artboard.selectedItems():
