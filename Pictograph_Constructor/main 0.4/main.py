@@ -152,7 +152,7 @@ class Main_Window(QWidget):
 
         #add a button to upload an svg
         self.uploadSVGButton = QPushButton("Upload SVG")
-        self.uploadSVGButton.clicked.connect(self.upload_svg)
+        self.uploadSVGButton.clicked.connect(handlers.upload_svg)
         masterbtnlayout.addWidget(self.uploadSVGButton)
         
 
@@ -174,37 +174,6 @@ class Main_Window(QWidget):
         self.uploadSVGButton.setFont(QFont('Helvetica', 14))
 
 
-    def parse_svg_file(file_path):
-        # Parse the SVG file
-        tree = ET.parse(file_path)
-
-        # Get the root element of the SVG file
-        root = tree.getroot()
-
-        # Iterate over all elements in the SVG file
-        for element in root.iter():
-            # Print the element's tag and attributes
-            print('tag:', element.tag)
-            print('attributes:', element.attrib)
-
-
-    def upload_svg(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open SVG", "", "SVG Files (*.svg)")
-        if file_path:
-            # Parse the SVG file
-            tree = ET.parse(file_path)
-            root = tree.getroot()
-
-            # Iterate over all elements in the SVG file
-            for element in root.iter():
-                # If the element is a 'path', create a new Arrow_Logic object
-                if element.tag == '{http://www.w3.org/2000/svg}path':
-                    arrow = Arrow_Logic(file_path, self.view)  # replace 'self.view' with your QGraphicsView object
-                    self.arrowbox_scene.addItem(arrow)  # replace 'self.artboard' with your QGraphicsScene object
-
-
-        # Call the function with the path to your SVG file
-    parse_svg_file('D:\CODE\TKA_Apps\Pictograph_Constructor\main 0.4\images\\arrows\\blue\\l\\anti\\blue_anti_l_ne.svg')
 
 app = QApplication(sys.argv)
 ex = Main_Window()

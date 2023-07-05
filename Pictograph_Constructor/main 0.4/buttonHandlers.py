@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtSvg import QSvgRenderer, QSvgGenerator
 from PyQt5.QtWidgets import QFileDialog
 import os
-
+import xml.etree.ElementTree as ET
 
 from arrows import Arrow_Logic
 
@@ -158,6 +158,9 @@ class Button_Handlers:
         for item in self.artboard.selectedItems():
             item.setSelected(False)
 
+
+
+
     def export_to_svg(self):
         generator = QSvgGenerator()
         generator.setFileName("output.svg")
@@ -167,3 +170,62 @@ class Button_Handlers:
         painter = QPainter(generator)
         self.artboard.render(painter)
         painter.end()
+
+    def upload_svg(self):
+        file_path, _ = QFileDialog.getOpenFileName(self.main_window, "Open SVG", "", "SVG Files (*.svg)")
+        if file_path:
+            # Parse the SVG file
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+
+            # Iterate over all elements in the SVG file
+            for element in root.iter():
+                # If the element is a 'path', create a new Arrow_Logic object
+                if element.tag == '{http://www.w3.org/2000/svg}path':
+                    arrow = Arrow_Logic(file_path, self.view)  # replace 'self.view' with your QGraphicsView object
+                    self.arrowbox_scene.addItem(arrow)  # replace 'self.artboard' with your QGraphicsScene object
+        #print the svg data in the console
+        print(ET.tostring(root, encoding='utf8').decode('utf8'))
+
+    def parse_svg_file(file_path):
+        # Parse the SVG file
+        tree = ET.parse(file_path)
+
+        # Get the root element of the SVG file
+        root = tree.getroot()
+
+        # Iterate over all elements in the SVG file
+        for element in root.iter():
+            # Print the element's tag and attributes
+            print('tag:', element.tag)
+            print('attributes:', element.attrib)
+
+        # Call the function with the path to your SVG file
+    parse_svg_file('D:\CODE\TKA_Apps\Pictograph_Constructor\main 0.4\images\\arrows\\blue\\l\\anti\\blue_anti_l_ne.svg')
+
+    def compare_svg_paths(file_path_1, file_path_2):
+        # Parse the first SVG file
+        tree_1 = ET.parse(file_path_1)
+        root_1 = tree_1.getroot()
+
+        # Parse the second SVG file
+        tree_2 = ET.parse(file_path_2)
+        root_2 = tree_2.getroot()
+
+        # Get the 'd' attribute of the 'path' element in the first SVG file
+        path_data_1 = None
+        for element in root_1.iter('{http://www.w3.org/2000/svg}path'):
+            path_data_1 = element.attrib.get('d')
+            break  # Assume there's only one 'path' element
+
+        # Get the 'd' attribute of the 'path' element in the second SVG file
+        path_data_2 = None
+        for element in root_2.iter('{http://www.w3.org/2000/svg}path'):
+            path_data_2 = element.attrib.get('d')
+            break  # Assume there's only one 'path' element
+
+        # Compare the two SVG paths
+        if path_data_1 == path_data_2:
+            print('The SVG paths are identical.')
+        else:
+            print('The SVG paths are different.')
