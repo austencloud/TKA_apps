@@ -1,16 +1,10 @@
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsPixmapItem, QAbstractItemView
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen
-from PyQt5.QtCore import Qt, QMimeData, QPointF, QRectF
-from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem
+from PyQt5.QtCore import Qt, QRectF
 from arrows import Arrow_Logic
-from xml.dom import minidom
-from PyQt5.QtGui import QPen, QBrush, QColor
-from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsItemGroup
-from grid import Grid
-from PyQt5.QtWidgets import QGraphicsEllipseItem
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import QGraphicsItem
 
-class Artboard(QGraphicsView):
+
+class Artboard_Events(QGraphicsView):
     def __init__(self, scene: QGraphicsScene, grid, parent=None):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)

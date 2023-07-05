@@ -1,10 +1,9 @@
 from PyQt5.QtWidgets import QApplication, QGraphicsItem
-from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath
+from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QBrush, QColor, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsEllipseItem
-from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtGui import QPen, QBrush, QColor
+
 
 class Arrow_Logic(QGraphicsSvgItem):
     def __init__(self, svg_file):
@@ -69,35 +68,38 @@ class Arrow_Logic(QGraphicsSvgItem):
     
     # need to modify this so it can access the svgs instead of usig pixmap
 
-    # def itemChange(self, change, value):
-    #     if change == QGraphicsItem.ItemPositionChange and self.grid is not None:
-    #         # Get the position of the arrow in the scene
-    #         pos = self.scenePos()
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.grid is not None:
+            # Get the position of the arrow in the scene
+            pos = self.scenePos()
 
-    #         # Determine the quadrant of the grid the arrow is in
-    #         if pos.y() < self.scene().height() / 2:
-    #             if pos.x() < self.scene().width() / 2:
-    #                 quadrant = 'nw'
-    #             else:
-    #                 quadrant = 'ne'
-    #         else:
-    #             if pos.x() < self.scene().width() / 2:
-    #                 quadrant = 'sw'
-    #             else:
-    #                 quadrant = 'se'
+            # Determine the quadrant of the grid the arrow is in
+            if pos.y() < self.scene().height() / 2:
+                if pos.x() < self.scene().width() / 2:
+                    quadrant = 'nw'
+                else:
+                    quadrant = 'ne'
+            else:
+                if pos.x() < self.scene().width() / 2:
+                    quadrant = 'sw'
+                else:
+                    quadrant = 'se'
 
-    #         # Replace the arrow with the corresponding form
-    #         if self.filename.startswith('red_anti'):
-    #             self.setPixmap(QPixmap('images\\arrows\\red_anti_r_' + quadrant + '.svg'))
-    #         elif self.filename.startswith('red_iso'):
-    #             self.setPixmap(QPixmap('images\\arrows\\red_iso_r_' + quadrant + '.svg'))
-    #         elif self.filename.startswith('blue_anti'):
-    #             self.setPixmap(QPixmap('images\\arrows\\blue_anti_r_' + quadrant + '.svg'))
-    #         elif self.filename.startswith('blue_iso'):
-    #             self.setPixmap(QPixmap('images\\arrows\\blue_iso_r_' + quadrant + '.svg'))
+            # Replace the arrow with the corresponding form
+            if self.filename.startswith('red_anti'):
+                new_svg = 'images\\arrows\\red_anti_r_' + quadrant + '.svg'
+            elif self.filename.startswith('red_iso'):
+                new_svg = 'images\\arrows\\red_iso_r_' + quadrant + '.svg'
+            elif self.filename.startswith('blue_anti'):
+                new_svg = 'images\\arrows\\blue_anti_r_' + quadrant + '.svg'
+            elif self.filename.startswith('blue_iso'):
+                new_svg = 'images\\arrows\\blue_iso_r_' + quadrant + '.svg'
 
-    #     return super().itemChange(change, value)
-    
+            # Load the new SVG file and replace the current SVG item with a new one
+            self.setSharedRenderer(QSvgRenderer(new_svg))
+
+        return super().itemChange(change, value)
+
     def updateRedDot(self):
         # Remove the old red dot
         if self.dot is not None:

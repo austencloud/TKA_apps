@@ -2,11 +2,11 @@ import os
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QGraphicsEllipseItem, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem
 from PyQt5.QtCore import QRectF, QPointF, Qt
-from PyQt5.QtGui import QPen, QBrush, QColor, QTransform, QFont
+from PyQt5.QtGui import QBrush, QColor, QTransform, QFont
 from arrows import Arrow_Logic
-from artboard import Artboard, Grid
-from buttonhandlers import Button_Handlers
-
+from artboardEvents import Artboard_Events
+from buttonHandlers import Button_Handlers
+from grid import Grid
 
 
 class Main_Window(QWidget):
@@ -96,7 +96,7 @@ class Main_Window(QWidget):
 
     def initArtboard(self):
         self.grid = Grid('images\\grid\\grid.svg')
-        view = Artboard(self.artboard, self.grid)
+        view = Artboard_Events(self.artboard, self.grid)
 
         # Set the size of the artboard to a fixed amount
         view.setFixedSize(1200, 1200)
