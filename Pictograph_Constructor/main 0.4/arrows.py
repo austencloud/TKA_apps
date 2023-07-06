@@ -56,12 +56,6 @@ class Arrow_Logic(QGraphicsSvgItem):
             self.drag.setHotSpot(pixmap.rect().center())
 
 
-
-
-
-
-
-
     def mouseMoveEvent(self, event):
         if self.in_artboard:
             print("mouse_pos:", mouse_pos)
@@ -115,10 +109,6 @@ class Arrow_Logic(QGraphicsSvgItem):
             self.drag.setPixmap(pixmap)
 
         self.drag.exec_(Qt.CopyAction | Qt.MoveAction)
-
-
-
-
 
 
 

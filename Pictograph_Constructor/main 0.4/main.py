@@ -188,18 +188,21 @@ class Info_Tracker():
         self.InfoTracker = InfoTracker
 
     def updateInfoTracker(self):
-        print(type(self.view))
-        print(type(self.view.scene()))
         selectedItems = self.view.scene().selectedItems()
         text = ""
         for item in selectedItems:
             if isinstance(item, Arrow_Logic):
-                attributes = item.get_attributes()
-                text += f"Color: {attributes['color']}\n"
-                text += f"Quadrant: {attributes['quadrant'].upper()}\n"
-                text += f"Rotation: {attributes['rotation']}\n"
-                text += f"Type: {attributes['type'].capitalize()}\n"
-                text += "\n"
+                try:
+                    attributes = item.get_attributes()
+                    text += f"Color: {attributes.get('color', 'N/A')}\n"
+                    text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}\n"
+                    text += f"Rotation: {attributes.get('rotation', 'N/A')}\n"
+                    text += f"Type: {attributes.get('type', 'N/A').capitalize()}\n"
+                    text += "\n"
+                except Exception as e:
+                    text += f"Error getting attributes for item: {e}\n"
+            else:
+                text += f"Item is not an instance of Arrow_Logic\n"
             self.InfoTracker.setText(text)
             
             for i in range(len(selectedItems)):
@@ -215,7 +218,6 @@ class Info_Tracker():
                                 text += "Letter: B\n"
                         elif item1.type != item2.type:
                             text += "Letter: C\n"
-            
 
 
 app = QApplication(sys.argv)
