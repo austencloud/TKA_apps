@@ -44,7 +44,7 @@ class Main_Window(QWidget):
         self.initButtons(vbox)
         vbox.addWidget(self.InfoTracker)
         self.infoTrackerInstance = Info_Tracker(self.view, self.InfoTracker)  # pass the view and InfoTracker here
-        self.artboard.changed.connect(self.infoTrackerInstance.updateInfoTracker)  # use the instance here
+        self.artboard.changed.connect(lambda: self.infoTrackerInstance.updateInfoTracker()) 
 
 
     def initArrowBox(self):
