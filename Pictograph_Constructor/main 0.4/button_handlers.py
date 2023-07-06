@@ -1,13 +1,14 @@
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtSvg import QSvgRenderer, QSvgGenerator
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QGraphicsItem
 import os
 import xml.etree.ElementTree as ET
-
+from svg_manager import SvgManager
 from arrows import Arrow_Logic
 
 class Button_Handlers:
+    SVG_SCALE = 10.0
     def __init__(self, artboard, view, grid, scene, main_window):
         self.artboard = artboard
         self.view = view
@@ -62,7 +63,7 @@ class Button_Handlers:
                     item.svg_file = new_svg
                 else:
                     print("Failed to load SVG file:", new_svg)
-
+            
     def mirrorArrow(self):
         for item in self.artboard.selectedItems():
             current_svg = item.svg_file
@@ -159,33 +160,67 @@ class Button_Handlers:
             item.setSelected(False)
 
 
-
-
     def export_to_svg(self):
+        # Create an SVG generator
         generator = QSvgGenerator()
-        generator.setFileName("output.svg")
-        generator.setSize(self.artboard.sceneRect().size().toSize())
-        generator.setViewBox(self.artboard.sceneRect())
 
+        # Set the file name to save the SVG
+        generator.setFileName('output.svg')
+
+        # Set the size of the artboard
+        generator.setSize(self.artboard.sceneRect().size().toSize())
+
+        # Set the resolution
+        generator.setResolution(300)  # 300 dpi
+
+        # Create a QPainter and begin painting on the SVG generator
         painter = QPainter(generator)
-        self.artboard.render(painter)
+
+        # Create an SVG renderer
+        renderer = QSvgRenderer()
+
+        # Iterate over the items in the scene
+        for item in self.artboard.items():
+            # Load the item into the renderer
+            renderer.load(item)
+
+            # Render the item
+            renderer.render(painter)
+
         painter.end()
 
     def upload_svg(self):
-        file_path, _ = QFileDialog.getOpenFileName(self.main_window, "Open SVG", "", "SVG Files (*.svg)")
+        file_path, _ = QFileDialog.getOpenFileName(self.main_window, "Open SVG", "images\\arrows", "SVG Files (*.svg)")
         if file_path:
-            # Parse the SVG file
-            tree = ET.parse(file_path)
-            root = tree.getroot()
+            svg_manager = SvgManager('images\\arrows')
+            match = svg_manager.find_match(file_path)
+            if match:
+                print(f"Match found: {match}")
+                # Load the SVG file into your artboard
+                arrow = Arrow_Logic(match, self.view)  # replace 'self.view' with your QGraphicsView object
+                arrow.setFlag(QGraphicsItem.ItemIsMovable, True)
+                arrow.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                arrow.setScale(self.SVG_SCALE)  # replace 'self.SVG_SCALE' with the scale you want
 
-            # Iterate over all elements in the SVG file
-            for element in root.iter():
-                # If the element is a 'path', create a new Arrow_Logic object
-                if element.tag == '{http://www.w3.org/2000/svg}path':
-                    arrow = Arrow_Logic(file_path, self.view)  # replace 'self.view' with your QGraphicsView object
-                    self.arrowbox_scene.addItem(arrow)  # replace 'self.artboard' with your QGraphicsScene object
-        #print the svg data in the console
-        print(ET.tostring(root, encoding='utf8').decode('utf8'))
+                # Extract the compass direction from the file name
+                file_name = os.path.basename(match)
+                compass_direction = file_name.split('_')[-1].split('.')[0]
+
+                # Set the position of the arrow based on the compass direction
+                if compass_direction == 'ne':
+                    arrow.setPos(530, 170)
+                elif compass_direction == 'se':
+                    arrow.setPos(530, 530)
+                elif compass_direction == 'sw':
+                    arrow.setPos(170, 530)
+                elif compass_direction == 'nw':
+                    arrow.setPos(170, 170)
+
+                self.artboard.addItem(arrow)  # replace 'self.artboard' with your QGraphicsScene object
+            else:
+                print("No match found")
+
+
 
     def parse_svg_file(file_path):
         # Parse the SVG file

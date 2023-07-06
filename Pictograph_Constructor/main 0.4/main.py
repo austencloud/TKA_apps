@@ -5,8 +5,8 @@ from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
 from PyQt5.QtSvg import QSvgWidget
 from arrows import Arrow_Logic
-from artboardEvents import Artboard_Events, updateInfoTracker
-from buttonHandlers import Button_Handlers
+from artboard_events import Artboard_Events, updateInfoTracker
+from button_handlers import Button_Handlers
 from grid import Grid
 from PyQt5.QtWidgets import QFileDialog
 import xml.etree.ElementTree as ET
@@ -38,7 +38,12 @@ class Main_Window(QWidget):
         self.setLayout(hbox)
         self.setWindowTitle('Drag & Drop')
         self.show()
+        self.coordinatesLabel = QLabel(self)
+        self.coordinatesLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.initButtons(vbox)
+        vbox.addWidget(self.coordinatesLabel)
+        self.view.itemMoved.connect(self.updateCoordinatesLabel)
+
 
     def initArrowBox(self):
         arrow_box = QScrollArea(self)
@@ -69,13 +74,12 @@ class Main_Window(QWidget):
         arrow_box.setWidget(scroll_widget)
         arrow_box.setWidgetResizable(True)
         # set a fixed height and width
-        arrow_box.setFixedWidth(800)
+        arrow_box.setFixedSize(800, 1600)
         arrow_box.setFixedHeight(1600)
 
         return arrow_box
 
     def initArtboard(self):
-        #set grid_size to the height of the scaled svg by looking at the svg itself
         grid_size = 650
         
         self.grid = Grid('images\\grid\\grid.svg')
@@ -88,17 +92,20 @@ class Main_Window(QWidget):
         transform.translate(self.grid_center.x() - (grid_size / 2), self.grid_center.y() - (grid_size / 2))
         self.grid.setTransform(transform)
 
-        line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
-        line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
+
 
         artboard_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         artboard_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.artboard.addItem(self.grid)
+
+        # line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
+        # line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
         # self.artboard.addItem(line_v)
         # self.artboard.addItem(line_h)
 
         return artboard_view
+
 
     def initButtons(self, layout):
         handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard, self)
@@ -172,6 +179,21 @@ class Main_Window(QWidget):
         self.exportAsPNGButton.setFont(QFont('Helvetica', 14))
         self.exportAsSVGButton.setFont(QFont('Helvetica', 14))
         self.uploadSVGButton.setFont(QFont('Helvetica', 14))
+        self.coordinatesLabel.setFont(QFont('Helvetica', 14))
+
+
+    def updateCoordinatesLabel(self):
+        selectedItems = self.view.scene().selectedItems()
+        text = ""
+        for item in selectedItems:
+            pos = item.scenePos()
+            rect = item.boundingRect()
+            center_pos = pos + QPointF(rect.width() / 2, rect.height() / 2)
+            text += f"Item at ({center_pos.x()}, {center_pos.y()})\n"
+        self.coordinatesLabel.setText(text)
+
+
+
 
 
 

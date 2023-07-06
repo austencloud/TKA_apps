@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsTextItem
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF
 from arrows import Arrow_Logic
 from PyQt5.QtWidgets import QGraphicsItem
 from PyQt5.QtSvg import QSvgRenderer
@@ -9,6 +9,8 @@ from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtCore import QTimer, Qt
 
 class Artboard_Events(QGraphicsView):
+    itemMoved = pyqtSignal()
+
     def __init__(self, scene: QGraphicsScene, grid, parent=None):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)
@@ -119,6 +121,7 @@ class Artboard_Events(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.dragging:
+            self.itemMoved.emit()
             new_pos = self.mapToScene(event.pos()) - self.dragOffset
             movement = new_pos - self.dragging.pos()
             for item in self.scene().selectedItems():
@@ -156,6 +159,8 @@ class Artboard_Events(QGraphicsView):
                         item.svg_file = new_svg
                     else:
                         print("Failed to load SVG file:", new_svg)
+                    self.itemMoved.emit()  # emit the signal after the item's position has been updated
+            self.itemMoved.emit()  # emit the signal after the item's position has been updated
 
     def mouseReleaseEvent(self, event):
         self.dragging = None
