@@ -161,32 +161,16 @@ class Button_Handlers:
 
 
     def export_to_svg(self):
-        # Create an SVG generator
         generator = QSvgGenerator()
-
-        # Set the file name to save the SVG
         generator.setFileName('output.svg')
-
-        # Set the size of the artboard
         generator.setSize(self.artboard.sceneRect().size().toSize())
-
-        # Set the resolution
         generator.setResolution(300)  # 300 dpi
-
-        # Create a QPainter and begin painting on the SVG generator
         painter = QPainter(generator)
-
-        # Create an SVG renderer
         renderer = QSvgRenderer()
 
-        # Iterate over the items in the scene
         for item in self.artboard.items():
-            # Load the item into the renderer
             renderer.load(item)
-
-            # Render the item
             renderer.render(painter)
-
         painter.end()
 
     def upload_svg(self):
@@ -196,17 +180,14 @@ class Button_Handlers:
             match = svg_manager.find_match(file_path)
             if match:
                 print(f"Match found: {match}")
-                # Load the SVG file into your artboard
-                arrow = Arrow_Logic(match, self.view)  # replace 'self.view' with your QGraphicsView object
+                arrow = Arrow_Logic(match, self.view)
                 arrow.setFlag(QGraphicsItem.ItemIsMovable, True)
                 arrow.setFlag(QGraphicsItem.ItemIsSelectable, True)
-                arrow.setScale(self.SVG_SCALE)  # replace 'self.SVG_SCALE' with the scale you want
+                arrow.setScale(self.SVG_SCALE)
 
-                # Extract the compass direction from the file name
                 file_name = os.path.basename(match)
                 compass_direction = file_name.split('_')[-1].split('.')[0]
 
-                # Set the position of the arrow based on the compass direction
                 if compass_direction == 'ne':
                     arrow.setPos(530, 170)
                 elif compass_direction == 'se':
@@ -216,50 +197,38 @@ class Button_Handlers:
                 elif compass_direction == 'nw':
                     arrow.setPos(170, 170)
 
-                self.artboard.addItem(arrow)  # replace 'self.artboard' with your QGraphicsScene object
+                self.artboard.addItem(arrow)
             else:
                 print("No match found")
 
-
-
     def parse_svg_file(file_path):
-        # Parse the SVG file
         tree = ET.parse(file_path)
-
-        # Get the root element of the SVG file
         root = tree.getroot()
 
-        # Iterate over all elements in the SVG file
         for element in root.iter():
-            # Print the element's tag and attributes
             print('tag:', element.tag)
             print('attributes:', element.attrib)
 
-        # Call the function with the path to your SVG file
-    parse_svg_file('D:\CODE\TKA_Apps\Pictograph_Constructor\main 0.4\images\\arrows\\blue\\l\\anti\\blue_anti_l_ne.svg')
+    # parse_svg_file('D:\CODE\TKA_Apps\Pictograph_Constructor\main 0.4\images\\arrows\\blue\\l\\anti\\blue_anti_l_ne.svg')
 
     def compare_svg_paths(file_path_1, file_path_2):
-        # Parse the first SVG file
+
         tree_1 = ET.parse(file_path_1)
         root_1 = tree_1.getroot()
 
-        # Parse the second SVG file
         tree_2 = ET.parse(file_path_2)
         root_2 = tree_2.getroot()
 
-        # Get the 'd' attribute of the 'path' element in the first SVG file
         path_data_1 = None
         for element in root_1.iter('{http://www.w3.org/2000/svg}path'):
             path_data_1 = element.attrib.get('d')
-            break  # Assume there's only one 'path' element
+            break 
 
-        # Get the 'd' attribute of the 'path' element in the second SVG file
         path_data_2 = None
         for element in root_2.iter('{http://www.w3.org/2000/svg}path'):
             path_data_2 = element.attrib.get('d')
-            break  # Assume there's only one 'path' element
+            break
 
-        # Compare the two SVG paths
         if path_data_1 == path_data_2:
             print('The SVG paths are identical.')
         else:

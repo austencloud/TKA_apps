@@ -21,6 +21,18 @@ class Artboard_Events(QGraphicsView):
         self.setInteractive(True)
         scene.setBackgroundBrush(Qt.white)
 
+    def get_attributes(self):
+        attributes = {}
+        base_name = os.path.basename(self.svg_file)
+        parts = base_name.split('_')
+
+        attributes['color'] = parts[0]
+        attributes['type'] = parts[1]
+        attributes['rotation'] = 'Clockwise' if parts[2] == 'r' else 'Anticlockwise'
+        attributes['quadrant'] = parts[3].split('.')[0]
+
+        return attributes
+
     def resizeEvent(self, event):
         self.setSceneRect(QRectF(self.rect()))
         super().resizeEvent(event)
@@ -221,16 +233,3 @@ class Update_Quadrant_Preview(QDrag):
             self.setPixmap(pixmap)
 
 
-class updateInfoTracker(QGraphicsTextItem):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setPlainText("Current Items: ")
-        self.setPos(0,0)
-        self.setDefaultTextColor(QColor(255,255,255))
-        self.setFont(QFont("Arial", 12))
-        self.setZValue(1)
-
-    def updateText(self, items):
-        self.setPlainText("Current Items: ")
-        for item in items:
-            self.setPlainText(self.toPlainText() + "\n" + item.svg_file)

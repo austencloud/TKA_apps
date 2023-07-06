@@ -8,6 +8,7 @@ from artboard_events import Artboard_Events
 from button_handlers import Button_Handlers
 from grid import Grid
 from PyQt5.QtWidgets import QFileDialog
+from info_tracker import Info_Tracker
 
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
@@ -31,6 +32,7 @@ class Main_Window(QWidget):
         self.view = self.initArtboard()
         arrowbox = self.initArrowBox()
         vbox.addWidget(self.view)
+        #print what type self.view is
         hbox.addWidget(arrowbox)
         #set the arrow box to hug the left side of the window
         hbox.addStretch(1)
@@ -38,11 +40,12 @@ class Main_Window(QWidget):
         self.setLayout(hbox)
         self.setWindowTitle('Drag & Drop')
         self.show()
-        self.coordinatesLabel = QLabel(self)
-        self.coordinatesLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.InfoTracker = QLabel(self)
+        self.InfoTracker.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.initButtons(vbox)
-        vbox.addWidget(self.coordinatesLabel)
-        self.view.itemMoved.connect(self.updateInfoTracker)
+        vbox.addWidget(self.InfoTracker)
+        self.infoTrackerInstance = Info_Tracker(self.view, self.InfoTracker)  # pass the view and InfoTracker here
+        self.artboard.changed.connect(self.infoTrackerInstance.updateInfoTracker)  # use the instance here
 
 
     def initArrowBox(self):
@@ -161,12 +164,12 @@ class Main_Window(QWidget):
         masterbtnlayout.addWidget(self.uploadSVGButton)
         
 
-        # # add text label for infotracker
-        # self.infoTracker = QLabel("Info Tracker")
-        # self.infoTracker.setFont(QFont('Helvetica', 14))
-        # #connect to handler so it updates whenever the state of the artboard changes
-        # self.artboard.changed.connect(updateInfoTracker.updateText())
-        # masterbtnlayout.addWidget(self.infoTracker)
+        # add text label for infotracker
+        self.infoTracker = QLabel("Info Tracker")
+        self.infoTracker.setFont(QFont('Helvetica', 14))
+        #connect to handler so it updates whenever the state of the artboard changes
+        self.artboard.changed.connect(Info_Tracker.updateInfoTracker)
+        masterbtnlayout.addWidget(self.infoTracker)
 
         button_font = QFont('Helvetica', 14)
 
@@ -179,22 +182,6 @@ class Main_Window(QWidget):
         self.exportAsPNGButton.setFont(button_font)
         self.exportAsSVGButton.setFont(button_font)
         self.uploadSVGButton.setFont(button_font)
-
-
-
-    def updateInfoTracker(self):
-        selectedItems = self.view.scene().selectedItems()
-        text = ""
-        for item in selectedItems:
-            pos = item.scenePos()
-            rect = item.boundingRect()
-            center_pos = pos + QPointF(rect.width() / 2, rect.height() / 2)
-            text += f"Item at ({center_pos.x()}, {center_pos.y()})\n"
-        self.coordinatesLabel.setText(text)
-
-
-
-
 
 
 app = QApplication(sys.argv)
