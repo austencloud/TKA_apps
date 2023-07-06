@@ -1,5 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
+import svgwrite
 
 class SvgManager:
     def __init__(self, arrow_dir):
@@ -25,3 +26,24 @@ class SvgManager:
                 if d == uploaded_d:
                     return svg_file
         return None
+
+class Make_Square_Bounding_Box_For_Arrows():
+
+    # Load the original SVG
+    original_svg = svgwrite.Drawing(filename='original.svg')
+
+    # Determine the largest dimension
+    largest_dimension = max(original_svg.width, original_svg.height)
+
+    # Create a new SVG that's a square with the size of the largest dimension
+    new_svg = svgwrite.Drawing(filename='new.svg', size=(largest_dimension, largest_dimension))
+
+    # Calculate the translation needed to center the original SVG within the new SVG
+    translation_x = (largest_dimension - original_svg.width) / 2
+    translation_y = (largest_dimension - original_svg.height) / 2
+
+    # Add the original SVG to the new SVG, translated to the center
+    new_svg.add(original_svg.translate(translation_x, translation_y))
+
+    # Save the new SVG
+    new_svg.save()

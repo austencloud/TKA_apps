@@ -3,13 +3,11 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem, QLabel, QFileDialog
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
-from PyQt5.QtSvg import QSvgWidget
 from arrows import Arrow_Logic
-from artboard_events import Artboard_Events, updateInfoTracker
+from artboard_events import Artboard_Events
 from button_handlers import Button_Handlers
 from grid import Grid
 from PyQt5.QtWidgets import QFileDialog
-import xml.etree.ElementTree as ET
 
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
@@ -29,11 +27,13 @@ class Main_Window(QWidget):
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         self.artboard = QGraphicsScene()
-        self.setGeometry(300, 300, 1800, 1400)  
+        self.setGeometry(300, 300, 1600, 1400)  
         self.view = self.initArtboard()
         arrowbox = self.initArrowBox()
         vbox.addWidget(self.view)
         hbox.addWidget(arrowbox)
+        #set the arrow box to hug the left side of the window
+        hbox.addStretch(1)
         hbox.addLayout(vbox)
         self.setLayout(hbox)
         self.setWindowTitle('Drag & Drop')
@@ -42,7 +42,7 @@ class Main_Window(QWidget):
         self.coordinatesLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.initButtons(vbox)
         vbox.addWidget(self.coordinatesLabel)
-        self.view.itemMoved.connect(self.updateCoordinatesLabel)
+        self.view.itemMoved.connect(self.updateInfoTracker)
 
 
     def initArrowBox(self):
@@ -92,17 +92,15 @@ class Main_Window(QWidget):
         transform.translate(self.grid_center.x() - (grid_size / 2), self.grid_center.y() - (grid_size / 2))
         self.grid.setTransform(transform)
 
-
-
         artboard_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         artboard_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.artboard.addItem(self.grid)
 
-        # line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
-        # line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
-        # self.artboard.addItem(line_v)
-        # self.artboard.addItem(line_h)
+        line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
+        line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
+        self.artboard.addItem(line_v)
+        self.artboard.addItem(line_h)
 
         return artboard_view
 
@@ -170,19 +168,21 @@ class Main_Window(QWidget):
         # self.artboard.changed.connect(updateInfoTracker.updateText())
         # masterbtnlayout.addWidget(self.infoTracker)
 
-        self.deleteButton.setFont(QFont('Helvetica', 14))
-        self.rotateRightButton.setFont(QFont('Helvetica', 14))
-        self.rotateLeftButton.setFont(QFont('Helvetica', 14))
-        self.mirrorButton.setFont(QFont('Helvetica', 14))
-        self.bringForward.setFont(QFont('Helvetica', 14))
-        self.swapColors.setFont(QFont('Helvetica', 14))
-        self.exportAsPNGButton.setFont(QFont('Helvetica', 14))
-        self.exportAsSVGButton.setFont(QFont('Helvetica', 14))
-        self.uploadSVGButton.setFont(QFont('Helvetica', 14))
-        self.coordinatesLabel.setFont(QFont('Helvetica', 14))
+        button_font = QFont('Helvetica', 14)
+
+        self.deleteButton.setFont(button_font)
+        self.rotateRightButton.setFont(button_font)
+        self.rotateLeftButton.setFont(button_font)
+        self.mirrorButton.setFont(button_font)
+        self.bringForward.setFont(button_font)
+        self.swapColors.setFont(button_font)
+        self.exportAsPNGButton.setFont(button_font)
+        self.exportAsSVGButton.setFont(button_font)
+        self.uploadSVGButton.setFont(button_font)
 
 
-    def updateCoordinatesLabel(self):
+
+    def updateInfoTracker(self):
         selectedItems = self.view.scene().selectedItems()
         text = ""
         for item in selectedItems:
