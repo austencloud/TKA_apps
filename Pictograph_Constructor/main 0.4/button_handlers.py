@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QFileDialog, QGraphicsItem
 import os
 import xml.etree.ElementTree as ET
 from svg_manager import SvgManager
-from arrows import Arrow_Logic
+from objects import Arrow
 
 class Button_Handlers:
     SVG_SCALE = 10.0
@@ -27,7 +27,7 @@ class Button_Handlers:
             
 
             #fill in the red dot
-            self.scene.addEllipse(scene_center.x() - 2, scene_center.y() - 2, 4, 4, Qt.red, Qt.red)
+            # self.scene.addEllipse(scene_center.x() - 2, scene_center.y() - 2, 4, 4, Qt.red, Qt.red)
 
 
             for item in self.artboard.selectedItems():
@@ -115,9 +115,13 @@ class Button_Handlers:
             item.setZValue(z + 1)
 
     def swapColors(self):
-        if len(self.artboard.selectedItems()) == 0:
-            self.selectAll()
-            for item in self.artboard.selectedItems():
+        # Filter the items to only include instances of Arrow
+        arrow_items = [item for item in self.artboard.items() if isinstance(item, Arrow)]
+        
+        # Check if there are at least one arrow on the artboard
+        if len(arrow_items) >= 1:
+            # Swap colors for all arrows
+            for item in arrow_items:
                 current_svg = item.svg_file
                 base_name = os.path.basename(current_svg)
                 color, type_, rotation, quadrant = base_name.split('_')[:4]
@@ -136,29 +140,8 @@ class Button_Handlers:
                     item.color = new_color
                 else:
                     print("Failed to load SVG file:", new_svg)
-
-        elif len(self.artboard.selectedItems()) > 0:
-            for item in self.artboard.selectedItems():
-                current_svg = item.svg_file
-                base_name = os.path.basename(current_svg)
-                color, type_, rotation, quadrant = base_name.split('_')[:4]
-                if color == "red":
-                    new_color = "blue"
-                elif color == "blue":
-                    new_color = "red"
-                else:
-                    print("Unexpected color:", color)
-                    continue
-                new_svg = current_svg.replace(color, new_color)
-                new_renderer = QSvgRenderer(new_svg)
-                if new_renderer.isValid():
-                    item.setSharedRenderer(new_renderer)
-                    item.svg_file = new_svg
-                    item.color = new_color
-                else:
-                    print("Failed to load SVG file:", new_svg)
-
-
+        else:
+            print("Cannot swap colors with no arrows on the artboard.")
 
     def selectAll(self):
         for item in self.artboard.items():
@@ -188,7 +171,7 @@ class Button_Handlers:
             match = svg_manager.find_match(file_path)
             if match:
                 print(f"Match found: {match}")
-                arrow = Arrow_Logic(match, self.view)
+                arrow = Arrow(match, self.view)
                 arrow.setFlag(QGraphicsItem.ItemIsMovable, True)
                 arrow.setFlag(QGraphicsItem.ItemIsSelectable, True)
                 arrow.setScale(self.SVG_SCALE)
@@ -241,3 +224,4 @@ class Button_Handlers:
             print('The SVG paths are identical.')
         else:
             print('The SVG paths are different.')
+

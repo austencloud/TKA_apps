@@ -1,9 +1,9 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem, QLabel, QFileDialog
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem, QLabel, QFileDialog, QCheckBox, QFrame
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
-from arrows import Arrow_Logic
+from objects import Arrow
 from artboard_events import Artboard_Events
 from button_handlers import Button_Handlers
 from grid import Grid
@@ -35,21 +35,20 @@ class Main_Window(QWidget):
         self.view.arrowMoved.connect(self.infoTracker.update)  # connect the signal to the update method
         arrowbox = self.initArrowBox()
         main_layout.addWidget(arrowbox)
-
+        main_layout.setAlignment(arrowbox, Qt.AlignTop)
         main_layout.addLayout(right_layout)
         self.setLayout(main_layout)
         self.setWindowTitle('Drag & Drop')
         self.show()
 
         right_layout.addWidget(self.view)
+        initCheckboxes(self.view)
         button_layout = self.initButtons()  
         right_layout.addLayout(button_layout)
         right_layout.addWidget(self.label)  # add the label to the layout
 
     def initArrowBox(self):
         arrow_box = QScrollArea(self)
-        scroll_widget = QWidget(self)
-        scroll_layout = QVBoxLayout()
         arrowbox_scene = QGraphicsScene()  # Use a separate scene for the arrow box
         svgs_full_paths = []
         default_arrows = ['red_anti_r_ne.svg', 'red_iso_r_ne.svg', 'blue_anti_r_sw.svg', 'blue_iso_r_sw.svg']
@@ -61,7 +60,7 @@ class Main_Window(QWidget):
         for i, svg in enumerate(svgs_full_paths):
             file_name = os.path.basename(svg)
             if file_name in default_arrows:
-                arrow_item = Arrow_Logic(svg, self.view, self.infoTracker)  # pass the QGraphicsView object here
+                arrow_item = Arrow(svg, self.view, self.infoTracker)  # pass the QGraphicsView object here
                 arrow_item.setFlag(QGraphicsItem.ItemIsMovable, True)
                 arrow_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
                 arrow_item.setScale(self.SVG_SCALE)
@@ -70,13 +69,11 @@ class Main_Window(QWidget):
                 svg_item_count += 1
 
         view = QGraphicsView(arrowbox_scene)  # use arrowbox_scene here
-        scroll_layout.addWidget(view)
-        scroll_widget.setLayout(scroll_layout)
-        arrow_box.setWidget(scroll_widget)
+        view.setFrameShape(QFrame.NoFrame)  # remove the border
+        arrow_box.setWidget(view)
         arrow_box.setWidgetResizable(True)
         # set a fixed height and width
-        arrow_box.setFixedSize(800, 1600)
-        arrow_box.setFixedHeight(1600)
+        arrow_box.setFixedSize(500, 1100)
 
         return arrow_box
 
@@ -98,17 +95,13 @@ class Main_Window(QWidget):
 
         self.artboard.addItem(self.grid)
 
-        line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
-        line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
-        self.artboard.addItem(line_v)
-        self.artboard.addItem(line_h)
+
 
         self.infoTracker = InfoTracker(self.artboard, self.label)
         self.artboard.changed.connect(self.infoTracker.update)
 
 
         return artboard_view
-
 
     def initButtons(self):
         handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard, self)
@@ -125,6 +118,8 @@ class Main_Window(QWidget):
         buttonlayout.addLayout(buttonstack1)
         buttonlayout.addLayout(buttonstack2)
         masterbtnlayout.addLayout(buttonlayout)
+
+
 
         self.deleteButton = QPushButton("Delete")
         self.deleteButton.clicked.connect(handlers.deleteArrow)
@@ -181,6 +176,31 @@ class Main_Window(QWidget):
         self.uploadSVGButton.setFont(button_font)
 
         return masterbtnlayout
+    
+class initCheckboxes:
+        
+    def __init__(self, artboard_view):
+        self.artboard_view = artboard_view
+        line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
+        line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
+        self.artboard_view.addItem(line_v)
+        self.artboard_view.addItem(line_h)
+        self.lineCheckbox = QCheckBox("Show Lines")
+        self.lineCheckbox.setChecked(True)
+        self.lineCheckbox.stateChanged.connect(toggleLines)
+        self.lineCheckbox.setFixedWidth(100)
+        self.lineCheckbox.setFixedHeight(20)
+        self.lineCheckbox.move(0, 0)
+        self.lineCheckbox.show()
+
+        #Toggle the lines on or off based on the state of the checkbox. 
+        def toggleLines(self, state):
+            if state == Qt.Checked:
+                self.artboard.view.showLines = True
+            else:
+                self.artboard.view.showLines = False
+            self.artboard.view.update()
+
 
 class InfoTracker:
     def __init__(self, artboard, label):
@@ -195,7 +215,7 @@ class InfoTracker:
     def getCurrentState(self):
         state = {}
         for item in self.artboard.items():
-            if isinstance(item, Arrow_Logic):
+            if isinstance(item, Arrow):
                 state[item] = item.get_attributes()
         return state
 
@@ -206,21 +226,31 @@ class InfoTracker:
             self.previous_state = current_state
 
     def update(self):
-        text = ""
+        header_text = "<h1>Arrow Info</h1>"
+        blue_text = "<h2>Blue</h2>"
+        red_text = "<h2>Red</h2>"
+
+        #show header text
+
         for item in self.artboard.items():
-            if isinstance(item, Arrow_Logic):
+            if isinstance(item, Arrow):
                 attributes = item.get_attributes()
                 color = attributes.get('color', 'N/A')
-                text += f"Color: {color}\n"
-                text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}\n"
-                text += f"Rotation: {attributes.get('rotation', 'N/A')}\n"
-                text += f"Type: {attributes.get('type', 'N/A').capitalize()}\n"
-                text += "\n"
-                if color == 'red':
-                    self.label.setStyleSheet("color: red")
-                elif color == 'blue':
-                    self.label.setStyleSheet("color: blue")
-        self.label.setText(text)
+                color_text = f"<font color='{color}'>Color: {color}</font>"
+                if color == 'blue':
+                    blue_text += f"{color_text}<br>"
+                    blue_text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}<br>"
+                    blue_text += f"Rotation: {attributes.get('rotation', 'N/A')}<br>"
+                    blue_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
+                    blue_text += "<br>"
+                elif color == 'red':
+                    red_text += f"{color_text}<br>"
+                    red_text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}<br>"
+                    red_text += f"Rotation: {attributes.get('rotation', 'N/A')}<br>"
+                    red_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
+                    red_text += "<br>"
+        self.label.setText("<table><tr><td>" + blue_text + "</td><td>" + red_text + "</td></tr></table>")
+
 
 app = QApplication(sys.argv)
 ex = Main_Window()

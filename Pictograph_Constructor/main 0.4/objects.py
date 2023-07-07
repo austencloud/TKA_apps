@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 import os
 
-class Arrow_Logic(QGraphicsSvgItem):
+class Arrow(QGraphicsSvgItem):
     SVG_SCALE = 10.0
     def __init__(self, svg_file, artboard, infoTracker):
         super().__init__(svg_file)
@@ -47,16 +47,26 @@ class Arrow_Logic(QGraphicsSvgItem):
             mime_data = QMimeData()
             mime_data.setText(self.svg_file)
             self.drag.setMimeData(mime_data)
-            image = QImage(self.boundingRect().size().toSize() * 8, QImage.Format_RGB32)
-            painter = QPainter(image)
 
+            # Create a QImage to render the SVG to
+            image = QImage(self.boundingRect().size().toSize() * 8, QImage.Format_ARGB32)
+            image.fill(Qt.transparent)  # Fill with transparency to preserve SVG transparency
+
+            # Create a QPainter to paint the SVG onto the QImage
+            painter = QPainter(image)
             painter.setRenderHint(QPainter.Antialiasing)
+
+            # Create a QSvgRenderer with the SVG file and render it onto the QImage
             renderer = QSvgRenderer(self.svg_file)
             if not renderer.isValid():
                 print(f"Failed to load SVG file: {self.svg_file}")
                 return
             renderer.render(painter)
+
+            # End the QPainter operation
             painter.end()
+
+            # Convert the QImage to a QPixmap and set it as the drag pixmap
             pixmap = QPixmap.fromImage(image)
             self.drag.setPixmap(pixmap)
             self.drag.setHotSpot(pixmap.rect().center())
@@ -144,6 +154,5 @@ class Arrow_Logic(QGraphicsSvgItem):
             'quadrant': self.quadrant,
             'rotation': self.rotation,
             'type': self.type,
-            # ... add any other attributes you want to track here ...
         }
         return attributes

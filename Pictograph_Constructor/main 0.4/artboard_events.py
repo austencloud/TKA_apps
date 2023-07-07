@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsTextItem
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF
-from arrows import Arrow_Logic
-from PyQt5.QtWidgets import QGraphicsItem
+from objects import Arrow
+from PyQt5.QtWidgets import QGraphicsItem, QToolTip
 from PyQt5.QtSvg import QSvgRenderer
 import os
 from PyQt5.QtGui import QDrag, QPixmap, QPainter, QFont, QPen, QColor, QBrush, QCursor, QTransform
@@ -45,21 +45,31 @@ class Artboard_Events(QGraphicsView):
         else:
             event.ignore()
         item = self.itemAt(event.pos())
-        if isinstance(item, Arrow_Logic):
+        if isinstance(item, Arrow):
             item.in_artboard = True
         super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event):
+        self.last_known_pos = event.pos()  # Store the last known position
         if event.mimeData().hasFormat('text/plain'):
-            event.setDropAction(Qt.CopyAction)
+            dropped_svg = event.mimeData().text()
+            base_name = os.path.basename(dropped_svg)
+            color, type_, rotation, quadrant = base_name.split('_')[:4]
+            for item in self.scene().items():
+                if isinstance(item, Arrow):
+                    if item.color == color:
+                        event.ignore()
+                        QToolTip.showText(QCursor.pos(), "Cannot add another arrow of the same color.")
+                        return
             event.accept()
+            QToolTip.hideText()  # Hide the tooltip when the event is accepted
         else:
             event.ignore()
-        self.last_known_pos = event.pos()
+
 
     def dragLeaveEvent(self, event):
         item = self.itemAt(self.last_known_pos)
-        if isinstance(item, Arrow_Logic):
+        if isinstance(item, Arrow):
             item.in_artboard = False
         super().dragLeaveEvent(event)
         
@@ -69,7 +79,7 @@ class Artboard_Events(QGraphicsView):
             event.accept()
             dropped_svg = event.mimeData().text()
 
-            self.arrow_item = Arrow_Logic(dropped_svg, self, self.infoTracker)
+            self.arrow_item = Arrow(dropped_svg, self, self.infoTracker)
             self.arrow_item.setScale(10.0)
 
             self.scene().addItem(self.arrow_item)
@@ -87,8 +97,12 @@ class Artboard_Events(QGraphicsView):
                     quadrant = 'se'
 
             base_name = os.path.basename(self.arrow_item.svg_file)
-
-
+            color, type_, rotation, quadrant = base_name.split('_')[:4]
+            for item in self.scene().items():
+                if isinstance(item, Arrow):
+                    if item.color == color:
+                        print("Cannot add another arrow of the same color.")
+                        return
 
             if base_name.startswith('red_anti'):
                 new_svg = f'images\\arrows\\red\\{self.arrow_item.rotation}\\anti\\red_anti_{self.arrow_item.rotation}_{quadrant}.svg'
@@ -103,15 +117,6 @@ class Artboard_Events(QGraphicsView):
                 new_svg = self.arrow_item.svg_file
 
             new_renderer = QSvgRenderer(new_svg)
-
-            #print the qualities of the new arrow
-            print("New Arrow:")
-            print("Color:", self.arrow_item.color)
-            print("Type:", self.arrow_item.type)
-            print("Rotation:", self.arrow_item.rotation)
-            print("Quadrant:", self.arrow_item.quadrant)
-            print("rotation:", self.arrow_item.rotation)
-            
 
             if new_renderer.isValid():
                 self.arrow_item.setSharedRenderer(new_renderer)
@@ -153,7 +158,7 @@ class Artboard_Events(QGraphicsView):
             for item in self.scene().selectedItems():
                 item.setPos(item.pos() + movement)
 
-                if isinstance(item, Arrow_Logic):
+                if isinstance(item, Arrow):
                     if item.pos().y() < self.sceneRect().height() / 2:
                         if item.pos().x() < self.sceneRect().width() / 2:
                             quadrant = 'nw'
@@ -166,7 +171,6 @@ class Artboard_Events(QGraphicsView):
                             quadrant = 'se'
 
                     item.quadrant = quadrant
-
                     base_name = os.path.basename(item.svg_file)
 
                     if base_name.startswith('red_anti'):
@@ -190,12 +194,6 @@ class Artboard_Events(QGraphicsView):
                         item.replacement_arrow_printed = False
                             #print the qualities of the replacement arrow just once
                         if item.replacement_arrow_printed == False:
-                            print("Replacement Arrow:")
-                            print("Color:", item.color)
-                            print("Type:", item.type)
-                            print("Rotation:", item.rotation)
-                            print("Quadrant:", item.quadrant)
-                            print("rotation:", item.rotation)
                             item.replacement_arrow_printed = True
 
                     else:
