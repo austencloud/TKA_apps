@@ -9,9 +9,9 @@ from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtCore import QTimer, Qt
 
 class Artboard_Events(QGraphicsView):
-    itemMoved = pyqtSignal()
+    arrowMoved = pyqtSignal()
 
-    def __init__(self, scene: QGraphicsScene, grid, parent=None):
+    def __init__(self, scene: QGraphicsScene, grid, infotracker, parent=None):
         super().__init__(scene, parent)
         self.setAcceptDrops(True)
         self.dragging = None
@@ -19,7 +19,8 @@ class Artboard_Events(QGraphicsView):
 
         self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setInteractive(True)
-        scene.setBackgroundBrush(Qt.white)
+        scene.setBackgroundBrush(Qt.white) 
+        self.infoTracker = infotracker
 
     def get_attributes(self):
         attributes = {}
@@ -54,10 +55,10 @@ class Artboard_Events(QGraphicsView):
             event.accept()
         else:
             event.ignore()
-        self.last_known_pos = event.pos()  # Update the last known position
+        self.last_known_pos = event.pos()
 
     def dragLeaveEvent(self, event):
-        item = self.itemAt(self.last_known_pos)  # Use the last known position
+        item = self.itemAt(self.last_known_pos)
         if isinstance(item, Arrow_Logic):
             item.in_artboard = False
         super().dragLeaveEvent(event)
@@ -68,7 +69,7 @@ class Artboard_Events(QGraphicsView):
             event.accept()
             dropped_svg = event.mimeData().text()
 
-            self.arrow_item = Arrow_Logic(dropped_svg, self)
+            self.arrow_item = Arrow_Logic(dropped_svg, self, self.infoTracker)
             self.arrow_item.setScale(10.0)
 
             self.scene().addItem(self.arrow_item)
@@ -87,23 +88,36 @@ class Artboard_Events(QGraphicsView):
 
             base_name = os.path.basename(self.arrow_item.svg_file)
 
+
+
             if base_name.startswith('red_anti'):
-                new_svg = f'images\\arrows\\red\\{self.arrow_item.orientation}\\anti\\red_anti_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\red\\{self.arrow_item.rotation}\\anti\\red_anti_{self.arrow_item.rotation}_{quadrant}.svg'
             elif base_name.startswith('red_iso'):
-                new_svg = f'images\\arrows\\red\\{self.arrow_item.orientation}\\iso\\red_iso_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\red\\{self.arrow_item.rotation}\\iso\\red_iso_{self.arrow_item.rotation}_{quadrant}.svg'
             elif base_name.startswith('blue_anti'):
-                new_svg = f'images\\arrows\\blue\\{self.arrow_item.orientation}\\anti\\blue_anti_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\blue\\{self.arrow_item.rotation}\\anti\\blue_anti_{self.arrow_item.rotation}_{quadrant}.svg'
             elif base_name.startswith('blue_iso'):
-                new_svg = f'images\\arrows\\blue\\{self.arrow_item.orientation}\\iso\\blue_iso_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\blue\\{self.arrow_item.rotation}\\iso\\blue_iso_{self.arrow_item.rotation}_{quadrant}.svg'
             else:
                 print(f"Unexpected svg_file: {self.arrow_item.svg_file}")
                 new_svg = self.arrow_item.svg_file
 
             new_renderer = QSvgRenderer(new_svg)
 
+            #print the qualities of the new arrow
+            print("New Arrow:")
+            print("Color:", self.arrow_item.color)
+            print("Type:", self.arrow_item.type)
+            print("Rotation:", self.arrow_item.rotation)
+            print("Quadrant:", self.arrow_item.quadrant)
+            print("rotation:", self.arrow_item.rotation)
+            
+
             if new_renderer.isValid():
                 self.arrow_item.setSharedRenderer(new_renderer)
                 self.arrow_item.svg_file = new_svg
+                #emit arrowMoved signal
+                self.arrowMoved.emit()
             else:
                 print("Failed to load SVG file:", new_svg)
         else:
@@ -133,7 +147,7 @@ class Artboard_Events(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.dragging:
-            self.itemMoved.emit()
+            self.arrowMoved.emit()
             new_pos = self.mapToScene(event.pos()) - self.dragOffset
             movement = new_pos - self.dragging.pos()
             for item in self.scene().selectedItems():
@@ -150,16 +164,19 @@ class Artboard_Events(QGraphicsView):
                             quadrant = 'sw'
                         else:
                             quadrant = 'se'
+
+                    item.quadrant = quadrant
+
                     base_name = os.path.basename(item.svg_file)
 
                     if base_name.startswith('red_anti'):
-                        new_svg = f'images\\arrows\\red\\{item.orientation}\\anti\\red_anti_{item.orientation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\red\\{item.rotation}\\anti\\red_anti_{item.rotation}_{quadrant}.svg'
                     elif base_name.startswith('red_iso'):
-                        new_svg = f'images\\arrows\\red\\{item.orientation}\\iso\\red_iso_{item.orientation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\red\\{item.rotation}\\iso\\red_iso_{item.rotation}_{quadrant}.svg'
                     elif base_name.startswith('blue_anti'):
-                        new_svg = f'images\\arrows\\blue\\{item.orientation}\\anti\\blue_anti_{item.orientation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\blue\\{item.rotation}\\anti\\blue_anti_{item.rotation}_{quadrant}.svg'
                     elif base_name.startswith('blue_iso'):
-                        new_svg = f'images\\arrows\\blue\\{item.orientation}\\iso\\blue_iso_{item.orientation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\blue\\{item.rotation}\\iso\\blue_iso_{item.rotation}_{quadrant}.svg'
                     else:
                         print(f"Unexpected svg_file: {item.svg_file}")
                         new_svg = item.svg_file 
@@ -169,10 +186,22 @@ class Artboard_Events(QGraphicsView):
                     if new_renderer.isValid():
                         item.setSharedRenderer(new_renderer)
                         item.svg_file = new_svg
+
+                        item.replacement_arrow_printed = False
+                            #print the qualities of the replacement arrow just once
+                        if item.replacement_arrow_printed == False:
+                            print("Replacement Arrow:")
+                            print("Color:", item.color)
+                            print("Type:", item.type)
+                            print("Rotation:", item.rotation)
+                            print("Quadrant:", item.quadrant)
+                            print("rotation:", item.rotation)
+                            item.replacement_arrow_printed = True
+
                     else:
                         print("Failed to load SVG file:", new_svg)
-                    self.itemMoved.emit()  # emit the signal after the item's position has been updated
-            self.itemMoved.emit()  # emit the signal after the item's position has been updated
+                    self.arrowMoved.emit()  # emit the signal after the item's position has been updated
+            self.arrowMoved.emit()
 
     def mouseReleaseEvent(self, event):
         self.dragging = None
@@ -210,13 +239,13 @@ class Update_Quadrant_Preview(QDrag):
         base_name = os.path.basename(self.mimeData().text())
 
         if base_name.startswith('red_anti'):
-            new_svg = f'images\\arrows\\red\\{self.arrow_item.orientation}\\anti\\red_anti_{self.arrow_item.orientation}_{quadrant}.svg'
+            new_svg = f'images\\arrows\\red\\{self.arrow_item.rotation}\\anti\\red_anti_{self.arrow_item.rotation}_{quadrant}.svg'
         elif base_name.startswith('red_iso'):
-            new_svg = f'images\\arrows\\red\\{self.arrow_item.orientation}\\iso\\red_iso_{self.arrow_item.orientation}_{quadrant}.svg'
+            new_svg = f'images\\arrows\\red\\{self.arrow_item.rotation}\\iso\\red_iso_{self.arrow_item.rotation}_{quadrant}.svg'
         elif base_name.startswith('blue_anti'):
-            new_svg = f'images\\arrows\\blue\\{self.arrow_item.orientation}\\anti\\blue_anti_{self.arrow_item.orientation}_{quadrant}.svg'
+            new_svg = f'images\\arrows\\blue\\{self.arrow_item.rotation}\\anti\\blue_anti_{self.arrow_item.rotation}_{quadrant}.svg'
         elif base_name.startswith('blue_iso'):
-            new_svg = f'images\\arrows\\blue\\{self.arrow_item.orientation}\\iso\\blue_iso_{self.arrow_item.orientation}_{quadrant}.svg'
+            new_svg = f'images\\arrows\\blue\\{self.arrow_item.rotation}\\iso\\blue_iso_{self.arrow_item.rotation}_{quadrant}.svg'
         else:
             print(f"Unexpected svg_file: {self.arrow_item.svg_file}")
             new_svg = self.arrow_item.svg_file

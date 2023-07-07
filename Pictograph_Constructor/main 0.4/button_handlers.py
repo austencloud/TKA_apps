@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QImage, QPainter
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import Qt, QPointF, pyqtSignal
 from PyQt5.QtSvg import QSvgRenderer, QSvgGenerator
 from PyQt5.QtWidgets import QFileDialog, QGraphicsItem
 import os
@@ -9,6 +9,7 @@ from arrows import Arrow_Logic
 
 class Button_Handlers:
     SVG_SCALE = 10.0
+
     def __init__(self, artboard, view, grid, scene, main_window):
         self.artboard = artboard
         self.view = view
@@ -42,9 +43,9 @@ class Button_Handlers:
                 # Move the item to the new position
                 item.setPos(scene_center + new_pos)
 
-                # Change the SVG file to match the new orientation
+                # Change the SVG file to match the new rotation
                 base_name = os.path.basename(item.svg_file)
-                color, type_, orientation, quadrant = base_name.split('_')[:4]
+                color, type_, rotation, quadrant = base_name.split('_')[:4]
                 quadrant = quadrant.replace('.svg', '')
 
                 quadrants = ['ne', 'se', 'sw', 'nw']
@@ -65,15 +66,16 @@ class Button_Handlers:
                     print("Failed to load SVG file:", new_svg)
             
     def mirrorArrow(self):
+        self.view.arrowMoved.emit()
         for item in self.artboard.selectedItems():
             current_svg = item.svg_file
 
-            if item.orientation == "l":
+            if item.rotation == "l":
                 new_svg = current_svg.replace("_l_", "_r_").replace("\\l\\", "\\r\\")
-                item.orientation = "r"
-            elif item.orientation == "r":
+                item.rotation = "r"
+            elif item.rotation == "r":
                 new_svg = current_svg.replace("_r_", "_l_").replace("\\r\\", "\\l\\")
-                item.orientation = "l"
+                item.rotation = "l"
             else:
                 print("Unexpected svg_file:", current_svg)
                 continue
@@ -82,8 +84,11 @@ class Button_Handlers:
             if new_renderer.isValid():
                 item.setSharedRenderer(new_renderer)
                 item.svg_file = new_svg
+
+                item.quadrant = item.quadrant.replace('.svg', '')
             else:
                 print("Failed to load SVG file:", new_svg)
+
 
     def deleteArrow(self):
         for item in self.artboard.selectedItems():
@@ -115,7 +120,7 @@ class Button_Handlers:
             for item in self.artboard.selectedItems():
                 current_svg = item.svg_file
                 base_name = os.path.basename(current_svg)
-                color, type_, orientation, quadrant = base_name.split('_')[:4]
+                color, type_, rotation, quadrant = base_name.split('_')[:4]
                 if color == "red":
                     new_color = "blue"
                 elif color == "blue":
@@ -128,13 +133,15 @@ class Button_Handlers:
                 if new_renderer.isValid():
                     item.setSharedRenderer(new_renderer)
                     item.svg_file = new_svg
+                    item.color = new_color
                 else:
                     print("Failed to load SVG file:", new_svg)
+
         elif len(self.artboard.selectedItems()) > 0:
             for item in self.artboard.selectedItems():
                 current_svg = item.svg_file
                 base_name = os.path.basename(current_svg)
-                color, type_, orientation, quadrant = base_name.split('_')[:4]
+                color, type_, rotation, quadrant = base_name.split('_')[:4]
                 if color == "red":
                     new_color = "blue"
                 elif color == "blue":
@@ -147,6 +154,7 @@ class Button_Handlers:
                 if new_renderer.isValid():
                     item.setSharedRenderer(new_renderer)
                     item.svg_file = new_svg
+                    item.color = new_color
                 else:
                     print("Failed to load SVG file:", new_svg)
 

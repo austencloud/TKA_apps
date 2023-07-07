@@ -6,16 +6,19 @@ import os
 
 class Arrow_Logic(QGraphicsSvgItem):
     SVG_SCALE = 10.0
-    def __init__(self, svg_file, artboard):
+    def __init__(self, svg_file, artboard, infoTracker):
         super().__init__(svg_file)
         self.setAcceptDrops(True)
         self.svg_file = svg_file
         self.in_artboard = False
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
-
         self.artboard = artboard
         self.grid = None
         self.dot = None
+        self.dragging = False
+        self.dragged_item = None
+        self.infoTracker = infoTracker
+        self.parse_filename()
 
         if "_l_" in svg_file:
             self.orientation = "l"
@@ -38,6 +41,9 @@ class Arrow_Logic(QGraphicsSvgItem):
             self.artboard_start_position = event.pos()
 
             self.drag = QDrag(self)
+            self.dragging = True 
+            self.dragged_item = self  # set dragged_item to self when the drag starts
+            
             mime_data = QMimeData()
             mime_data.setText(self.svg_file)
             self.drag.setMimeData(mime_data)
@@ -55,8 +61,13 @@ class Arrow_Logic(QGraphicsSvgItem):
             self.drag.setPixmap(pixmap)
             self.drag.setHotSpot(pixmap.rect().center())
 
-
     def mouseMoveEvent(self, event):
+        if self.dragging:
+            new_pos = self.mapToScene(event.pos()) - self.dragOffset
+            movement = new_pos - self.dragged_item.pos()  # use self.dragged_item here
+        for item in self.scene().selectedItems():
+            item.setPos(item.pos() + movement)
+        self.infoTracker.checkForChanges()
         if self.in_artboard:
             print("mouse_pos:", mouse_pos)
             super().mouseMoveEvent(event)
@@ -110,12 +121,29 @@ class Arrow_Logic(QGraphicsSvgItem):
 
         self.drag.exec_(Qt.CopyAction | Qt.MoveAction)
 
-
-
     def mouseReleaseEvent(self, event):
-        self.setCursor(Qt.OpenHandCursor)
+        self.dragging = False 
+        self.dragged_item = None  # set dragged_item to None when the drag ends
 
     def shape(self):
         path = QPainterPath()
         path.addRect(self.renderer().boundsOnElement(self.elementId()))
         return path
+
+    def parse_filename(self):
+        # Assuming filenames are in the format 'color_type_r_quadrant.svg'
+        parts = os.path.basename(self.svg_file).split('_')  # use self.svg_file here
+        self.color = parts[0]
+        self.type = parts[1]
+        self.rotation = parts[2]
+        self.quadrant = parts[3].split('.')[0]  # remove the '.svg' part
+
+    def get_attributes(self):
+        attributes = {
+            'color': self.color,
+            'quadrant': self.quadrant,
+            'rotation': self.rotation,
+            'type': self.type,
+            # ... add any other attributes you want to track here ...
+        }
+        return attributes

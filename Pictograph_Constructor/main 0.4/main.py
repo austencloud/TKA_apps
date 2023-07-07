@@ -24,23 +24,27 @@ class Main_Window(QWidget):
             self.svgWidget.load(fileName)
 
     def initUI(self):
-        vbox = QVBoxLayout()
-        hbox = QHBoxLayout()
+        main_layout = QHBoxLayout()
+        right_layout = QVBoxLayout()
+        self.label = QLabel(self)  # create a QLabel instance
         self.artboard = QGraphicsScene()
         self.setGeometry(300, 300, 1600, 1400)  
-        self.view = self.initArtboard()
+
+        self.infoTracker = InfoTracker(self.artboard, self.label)
+        self.view = self.initArtboard() 
+        self.view.arrowMoved.connect(self.infoTracker.update)  # connect the signal to the update method
         arrowbox = self.initArrowBox()
-        vbox.addWidget(self.view)
-        #print what type self.view is
-        hbox.addWidget(arrowbox)
-        #set the arrow box to hug the left side of the window
-        hbox.addStretch(1)
-        hbox.addLayout(vbox)
-        self.setLayout(hbox)
+        main_layout.addWidget(arrowbox)
+
+        main_layout.addLayout(right_layout)
+        self.setLayout(main_layout)
         self.setWindowTitle('Drag & Drop')
         self.show()
-        self.initButtons(vbox)
 
+        right_layout.addWidget(self.view)
+        button_layout = self.initButtons()  
+        right_layout.addLayout(button_layout)
+        right_layout.addWidget(self.label)  # add the label to the layout
 
     def initArrowBox(self):
         arrow_box = QScrollArea(self)
@@ -57,12 +61,12 @@ class Main_Window(QWidget):
         for i, svg in enumerate(svgs_full_paths):
             file_name = os.path.basename(svg)
             if file_name in default_arrows:
-                svg_item = Arrow_Logic(svg, self.view)  # pass the QGraphicsView object here
-                svg_item.setFlag(QGraphicsItem.ItemIsMovable, True)
-                svg_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
-                svg_item.setScale(self.SVG_SCALE)
-                svg_item.setPos(0, svg_item_count * self.SVG_POS_Y)
-                arrowbox_scene.addItem(svg_item)  # use arrowbox_scene here
+                arrow_item = Arrow_Logic(svg, self.view, self.infoTracker)  # pass the QGraphicsView object here
+                arrow_item.setFlag(QGraphicsItem.ItemIsMovable, True)
+                arrow_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                arrow_item.setScale(self.SVG_SCALE)
+                arrow_item.setPos(0, svg_item_count * self.SVG_POS_Y)
+                arrowbox_scene.addItem(arrow_item)  # use arrowbox_scene here
                 svg_item_count += 1
 
         view = QGraphicsView(arrowbox_scene)  # use arrowbox_scene here
@@ -80,7 +84,7 @@ class Main_Window(QWidget):
         grid_size = 650
         
         self.grid = Grid('images\\grid\\grid.svg')
-        artboard_view = Artboard_Events(self.artboard, self.grid)
+        artboard_view = Artboard_Events(self.artboard, self.grid, self.infoTracker)
         artboard_view.setFixedSize(700, 700)
 
         transform = QTransform()
@@ -99,10 +103,14 @@ class Main_Window(QWidget):
         self.artboard.addItem(line_v)
         self.artboard.addItem(line_h)
 
+        self.infoTracker = InfoTracker(self.artboard, self.label)
+        self.artboard.changed.connect(self.infoTracker.update)
+
+
         return artboard_view
 
 
-    def initButtons(self, layout):
+    def initButtons(self):
         handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard, self)
 
         masterbtnlayout = QVBoxLayout()
@@ -117,7 +125,6 @@ class Main_Window(QWidget):
         buttonlayout.addLayout(buttonstack1)
         buttonlayout.addLayout(buttonstack2)
         masterbtnlayout.addLayout(buttonlayout)
-        layout.addLayout(masterbtnlayout)
 
         self.deleteButton = QPushButton("Delete")
         self.deleteButton.clicked.connect(handlers.deleteArrow)
@@ -152,6 +159,9 @@ class Main_Window(QWidget):
         self.exportAsSVGButton.clicked.connect(handlers.export_to_svg)
         masterbtnlayout.addWidget(self.exportAsSVGButton)
 
+
+        self.infoTracker.update()
+
         #add a button to upload an svg
         self.uploadSVGButton = QPushButton("Upload SVG")
         self.uploadSVGButton.clicked.connect(handlers.upload_svg)
@@ -170,7 +180,47 @@ class Main_Window(QWidget):
         self.exportAsSVGButton.setFont(button_font)
         self.uploadSVGButton.setFont(button_font)
 
+        return masterbtnlayout
 
+class InfoTracker:
+    def __init__(self, artboard, label):
+        self.artboard = artboard
+        self.label = label
+        self.previous_state = self.getCurrentState()
+        #increase font size
+        self.label.setFont(QFont('Helvetica', 14))
+        #make it hug the top
+        self.label.setAlignment(Qt.AlignTop)
+
+    def getCurrentState(self):
+        state = {}
+        for item in self.artboard.items():
+            if isinstance(item, Arrow_Logic):
+                state[item] = item.get_attributes()
+        return state
+
+    def checkForChanges(self):
+        current_state = self.getCurrentState()
+        if current_state != self.previous_state:
+            self.update()
+            self.previous_state = current_state
+
+    def update(self):
+        text = ""
+        for item in self.artboard.items():
+            if isinstance(item, Arrow_Logic):
+                attributes = item.get_attributes()
+                color = attributes.get('color', 'N/A')
+                text += f"Color: {color}\n"
+                text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}\n"
+                text += f"Rotation: {attributes.get('rotation', 'N/A')}\n"
+                text += f"Type: {attributes.get('type', 'N/A').capitalize()}\n"
+                text += "\n"
+                if color == 'red':
+                    self.label.setStyleSheet("color: red")
+                elif color == 'blue':
+                    self.label.setStyleSheet("color: blue")
+        self.label.setText(text)
 
 app = QApplication(sys.argv)
 ex = Main_Window()
