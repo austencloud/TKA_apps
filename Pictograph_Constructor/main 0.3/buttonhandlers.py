@@ -100,6 +100,9 @@ class Button_Handlers:
 
 #write a swapColors function which looks at all the svgs that are currently selected and changes the red to blue and blue to red
     def swapColors(self):
+        #if no items are selected, select all of them
+        if len(self.artboard.selectedItems()) == 0:
+            self.selectAll()
         for item in self.artboard.selectedItems():
             current_svg = item.svg_file
             base_name = os.path.basename(current_svg)
@@ -118,3 +121,7 @@ class Button_Handlers:
                 item.svg_file = new_svg
             else:
                 print("Failed to load SVG file:", new_svg)
+
+    def selectAll(self):
+        for item in self.artboard.items():
+            item.setSelected(True)

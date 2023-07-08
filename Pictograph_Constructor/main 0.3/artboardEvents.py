@@ -29,6 +29,10 @@ class Artboard_Events(QGraphicsView):
             event.accept()
         else:
             event.ignore()
+        item = self.itemAt(event.pos())
+        if isinstance(item, Arrow_Logic):
+            item.in_artboard = True
+        super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event):
         if event.mimeData().hasFormat('text/plain'):
@@ -36,7 +40,13 @@ class Artboard_Events(QGraphicsView):
             event.accept()
         else:
             event.ignore()
-            
+    
+    def dragLeaveEvent(self, event):
+        item = self.itemAt(event.pos())
+        if isinstance(item, Arrow_Logic):
+            item.in_artboard = False
+        super().dragLeaveEvent(event)
+
     def dropEvent(self, event):
         if event.mimeData().hasFormat('text/plain'):
             event.setDropAction(Qt.CopyAction)
@@ -95,7 +105,7 @@ class Artboard_Events(QGraphicsView):
                 items[0].setSelected(True)
             self.dragging = items[0]
             self.dragOffset = self.mapToScene(event.pos()) - self.dragging.pos()
-            self.drag = Update_Arrow_Drag_Preview(self, self.dragging)
+            self.drag = Update_Quadrant_Preview(self, self.dragging)
 
 
         else:
@@ -152,7 +162,7 @@ class Artboard_Events(QGraphicsView):
         self.setRubberBandSelectionMode(Qt.IntersectsItemShape)
         super().mouseReleaseEvent(event)
 
-class Update_Arrow_Drag_Preview(QDrag):
+class Update_Quadrant_Preview(QDrag):
     def __init__(self, source, arrow_item, *args, **kwargs):
         super().__init__(source, *args, **kwargs)
         self.arrow_item = arrow_item
@@ -164,7 +174,6 @@ class Update_Arrow_Drag_Preview(QDrag):
         result = super().exec_(*args, **kwargs)
         self.timer.stop()
         return result
-
 
     def updatePixmap(self):
         mouse_pos = self.source().mapFromGlobal(self.source().cursor().pos())
@@ -205,7 +214,7 @@ class Update_Arrow_Drag_Preview(QDrag):
             painter.end()
             self.setPixmap(pixmap)
 
-#track the current items in the artboard and display them as text
+
 class updateInfoTracker(QGraphicsTextItem):
     def __init__(self, parent=None):
         super().__init__(parent)
