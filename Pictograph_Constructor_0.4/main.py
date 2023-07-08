@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
 from PyQt5.QtXml import QDomDocument
 from upload_manager import UploadManager
+from data import positions, compass_mapping
 
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
@@ -235,10 +236,14 @@ class Info_Tracker:
         #increase font size
         self.label.setFont(QFont('Helvetica', 14))
         #make it hug the top
+        #make the text in the label selectable and copyable
+        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
         self.label.setAlignment(Qt.AlignTop)
 
     def getCurrentState(self):
         state = {}
+        if self.artboard is None:
+            return state
         for item in self.artboard.items():
             if isinstance(item, Arrow):
                 state[item] = item.get_attributes()
@@ -249,14 +254,68 @@ class Info_Tracker:
         if current_state != self.previous_state:
             self.update()
             self.previous_state = current_state
+    
+    def get_positional_relationship(self, start1, end1, start2, end2):
+        # Map the start and end positions to their corresponding compass points
+        start1_compass = Arrow.get_position_from_directions(start1, start1)
+        end1_compass = Arrow.get_position_from_directions(end1, end1)
+        start2_compass = Arrow.get_position_from_directions(start2, start2)
+        end2_compass = Arrow.get_position_from_directions(end2, end2)
+
+        # Determine the start position
+        if set(start1_compass) == set(start2_compass):
+            start_position = "beta"
+        elif set(start1_compass) == set(["n", "s"]) or set(start1_compass) == set(["e", "w"]):
+            start_position = "alpha"
+        else:
+            start_position = "gamma"
+
+        # Determine the end position
+        if set(end1_compass) == set(end2_compass):
+            end_position = "beta"
+        elif set(end1_compass) == set(["n", "s"]) or set(end1_compass) == set(["e", "w"]):
+            end_position = "alpha"
+        else:
+            end_position = "gamma"
+
+        return start_position + " to " + end_position
+
+            
+    def generate_arrow_positions():
+        arrow_positions = {}
+        for dirpath, dirnames, filenames in os.walk(Main_Window.ARROW_DIR):
+            for filename in filenames:
+                if filename.endswith('.svg'):
+                    parts = filename.split('_')
+                    arrow_type = parts[1]
+                    rotation = parts[2]
+                    quadrant = parts[3].split('.')[0]
+                    if arrow_type == "anti":
+                        if rotation == "l":
+                            start_position, end_position = ("n", "s")
+                        else:  # rotation == "r"
+                            end_position, start_position = ("n", "s")
+                    else:  # arrow_type == "iso"
+                        if rotation == "l":
+                            start_position, end_position = ("n", "s")
+                        else:  # rotation == "r"
+                            end_position, start_position = ("n", "s")
+                    arrow_positions[filename] = (start_position, end_position)
+        return arrow_positions
+
 
     def update(self):
         blue_text = "<h2>Left</h2>"
         red_text = "<h2>Right</h2>"
+        letter_text = "<h2>Letter</h2>"
+
 
         for item in self.artboard.items():
             if isinstance(item, Arrow):
                 attributes = item.get_attributes()
+                start_position1, end_position1 = attributes.get('start_position', 'N/A'), attributes.get('end_position', 'N/A')
+                start_position2, end_position2 = attributes.get('start_position', 'N/A'), attributes.get('end_position', 'N/A')
+                positional_relationship = self.get_positional_relationship(start_position1, end_position1, start_position2, end_position2)
                 color = attributes.get('color', 'N/A')
                 color_text = f"<font color='{color}'>Color: {color}</font>"
                 if color == 'blue':
@@ -266,6 +325,8 @@ class Info_Tracker:
                     blue_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
                     blue_text += f"Start position: {attributes.get('start_position', 'N/A').capitalize()}<br>"
                     blue_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
+                    blue_text += f"Positional relationship: {positional_relationship}<br>"
+
                     blue_text += "<br>"
                 elif color == 'red':
                     red_text += f"{color_text}<br>"
@@ -274,8 +335,43 @@ class Info_Tracker:
                     red_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
                     red_text += f"Start position: {attributes.get('start_position', 'N/A').capitalize()}<br>"
                     red_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
+                    red_text += f"Positional relationship: {positional_relationship}<br>"
+
                     red_text += "<br>"
-        self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td></tr></table>")
+        self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td><td width=300>" + letter_text + "</td></tr></table>")
+
+info_tracker = Info_Tracker(None, None)  # Create an instance of Info_Tracker
+
+arrow_positions = info_tracker.generate_arrow_positions()  # Call the method on the instance
+
+start_position1, end_position1 = arrow_positions["red_iso_l_ne.svg"]
+start_position2, end_position2 = arrow_positions["blue_iso_r_se.svg"]
+
+positional_relationship = info_tracker.get_positional_relationship(start_position1, end_position1, start_position2, end_position2)
+
+print(positional_relationship)  # Outputs: "beta to alpha"
+
+
+class Letter:
+    def __init__(self, arrow1, arrow2):
+        self.arrow1 = arrow1
+        self.arrow2 = arrow2
+        
+    def get_start_position(self):
+        # Get the start positions of the two arrows
+        start_position1 = Arrow.get_arrow_start_position(self.arrow1)
+        start_position2 = Arrow.get_arrow_start_position(self.arrow2)
+
+        # Return the position corresponding to the pair of start positions
+        return Arrow.get_position_from_directions(start_position1, start_position2)
+
+    def get_end_position(self):
+        # Get the end positions of the two arrows
+        end_position1 = Arrow.get_arrow_end_position(self.arrow1)
+        end_position2 = Arrow.get_arrow_end_position(self.arrow2)
+
+        # Return the position corresponding to the pair of end positions
+        return Arrow.get_position_from_directions(end_position1, end_position2)
 
 
 app = QApplication(sys.argv)

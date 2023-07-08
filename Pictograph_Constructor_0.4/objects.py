@@ -168,8 +168,8 @@ class Arrow(QGraphicsSvgItem):
 
     def generate_arrow_positions(color):
         return {
-            f"{color}_anti_l_ne.svg": ("e", "n"),
-            f"{color}_anti_r_ne.svg": ("n", "e"),
+            f"{color}_anti_l_ne.svg": ("n", "e"),
+            f"{color}_anti_r_ne.svg": ("e", "n"),
             f"{color}_anti_l_nw.svg": ("w", "n"),
             f"{color}_anti_r_nw.svg": ("n", "w"),
             f"{color}_anti_l_se.svg": ("e", "s"),
@@ -186,3 +186,29 @@ class Arrow(QGraphicsSvgItem):
             f"{color}_iso_r_sw.svg": ("s", "w"),
         }
     arrow_positions = {**generate_arrow_positions("red"), **generate_arrow_positions("blue")}
+
+    def get_arrow_start_position(arrow):
+        # Assuming that the 'start_position' attribute of an arrow is a direction
+        return arrow.get_attributes().get('start_position')
+
+    def get_arrow_end_position(arrow):
+        # Assuming that the 'end_position' attribute of an arrow is a direction
+        return arrow.get_attributes().get('end_position')
+
+    def get_position_from_directions(direction1, direction2):
+        # Define the mapping from pairs of directions to positions
+        directions_positions = {
+            ("n", "s"): "alpha",
+            ("w", "e"): "alpha",
+            ("e", "e"): "beta",
+            ("s", "s"): "beta",
+            ("w", "w"): "beta",
+            ("n", "n"): "beta",
+            ("n", "e"): "gamma",
+            ("e", "s"): "gamma",
+            ("s", "w"): "gamma",
+            ("w", "n"): "gamma",
+        }
+
+        # Return the position corresponding to the pair of directions
+        return directions_positions.get((direction1, direction2))
