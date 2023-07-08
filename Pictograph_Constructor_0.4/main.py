@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QGraphicsLineItem, QLabel, QFileDialog, QCheckBox, QFrame
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QLabel, QFileDialog, QCheckBox, QFrame
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
 from objects import Arrow
