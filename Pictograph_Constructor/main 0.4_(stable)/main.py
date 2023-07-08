@@ -8,6 +8,8 @@ from artboard_events import Artboard
 from button_handlers import Button_Handlers
 from grid import Grid
 from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
+from PyQt5.QtXml import QDomDocument
 
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
@@ -40,11 +42,13 @@ class Main_Window(QWidget):
         self.setLayout(main_layout)
         self.setWindowTitle('Drag & Drop')
         self.show()
-
+        self.grid = Grid('images\\grid\\grid.svg')
         right_layout.addWidget(self.view)
-        CheckboxInitializer(self.view)
         button_layout = self.initButtons()  
         right_layout.addLayout(button_layout)
+        self.checkbox_manager = Checkbox_Manager(self.view, self.grid)
+        right_layout.addWidget(self.checkbox_manager.getCheckbox())
+
         right_layout.addWidget(self.label)  # add the label to the layout
 
     def initArrowBox(self):
@@ -176,32 +180,51 @@ class Main_Window(QWidget):
         self.uploadSVGButton.setFont(button_font)
 
         return masterbtnlayout
-    
-class CheckboxInitializer:
-        
-    def __init__(self, artboard_view):
+
+class Checkbox_Manager():
+    def __init__(self, artboard_view, grid):
         self.artboard_view = artboard_view
-        line_v = QGraphicsLineItem(artboard_view.frameSize().width() / 2, 0, artboard_view.frameSize().width() / 2, artboard_view.frameSize().height())
-        line_h = QGraphicsLineItem(0, artboard_view.frameSize().height() / 2, artboard_view.frameSize().width(), artboard_view.frameSize().height() / 2)
-        self.artboard_view.scene().addItem(line_v)
-        self.artboard_view.scene().addItem(line_h)
         self.lineCheckbox = QCheckBox("Show Lines")
+        self.lineCheckbox.setFont(QFont('Helvetica', 14))
         self.lineCheckbox.setChecked(True)
         self.lineCheckbox.stateChanged.connect(self.toggleLines)
-        
-        self.lineCheckbox.setFixedWidth(100)
-        self.lineCheckbox.setFixedHeight(20)
         self.lineCheckbox.move(0, 0)
         self.lineCheckbox.show()
+        self.grid = grid
 
-    #Toggle the lines on or off based on the state of the checkbox. 
+        # Load the SVG file
+        self.grid_renderer = QSvgRenderer()
+        self.grid_renderer.load('images\\grid\\grid.svg')
+
+
+    def getCheckbox(self):
+        return self.lineCheckbox
+        
     def toggleLines(self, state):
-        if state == Qt.Checked:
-            self.artboard.view.showLines = True
-        else:
-            self.artboard.view.showLines = False
-        self.artboard.view.update()
+        print("toggleLines")
 
+        # Load the SVG file into a QDomDocument
+        svg_doc = QDomDocument()
+        with open('images\\grid\\grid.svg', 'r') as f:
+            svg_doc.setContent(f.read())
+
+        # Find all line elements
+        lines = svg_doc.elementsByTagName('line')
+
+        # Change the color of the lines
+        for i in range(lines.length()):
+            line = lines.item(i).toElement()  # Convert the QDomNode to a QDomElement
+            if line.hasAttribute('class') and line.attribute('class') == 'lines':
+                if state == Qt.Checked:
+                    line.setAttribute('stroke', '#000000')  # Change to black
+                else:
+                    line.setAttribute('stroke', 'none')  # Make invisible
+
+        # Update the QGraphicsSvgItem with the modified document
+        self.grid_renderer.load(svg_doc.toByteArray())
+
+        # Update the Grid object with the new SVG content
+        self.grid.updateSvgContent(self.grid_renderer)
 
 class InfoTracker:
     def __init__(self, artboard, label):
@@ -227,11 +250,8 @@ class InfoTracker:
             self.previous_state = current_state
 
     def update(self):
-        header_text = "<h1>Arrow Info</h1>"
-        blue_text = "<h2>Blue</h2>"
-        red_text = "<h2>Red</h2>"
-
-        #show header text
+        blue_text = "<h2>Left</h2>"
+        red_text = "<h2>Right</h2>"
 
         for item in self.artboard.items():
             if isinstance(item, Arrow):
@@ -250,7 +270,7 @@ class InfoTracker:
                     red_text += f"Rotation: {attributes.get('rotation', 'N/A')}<br>"
                     red_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
                     red_text += "<br>"
-        self.label.setText("<table><tr><td>" + blue_text + "</td><td>" + red_text + "</td></tr></table>")
+        self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td></tr></table>")
 
 
 app = QApplication(sys.argv)

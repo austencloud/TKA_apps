@@ -4,6 +4,9 @@ from PyQt5.QtSvg import QGraphicsSvgItem
 
 class Grid(QGraphicsSvgItem):
 
+    def updateSvgContent(self, svg_content):
+        self.setSharedRenderer(svg_content)
+
     def __init__(self, grid_svg):
         super().__init__(grid_svg)
 
