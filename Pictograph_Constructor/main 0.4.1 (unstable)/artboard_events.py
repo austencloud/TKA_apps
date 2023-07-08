@@ -1,12 +1,11 @@
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsTextItem
-from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF
-from objects import Arrow
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QGraphicsItem
+from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QTimer
+from PyQt5.QtGui import QDrag, QPixmap, QPainter, QCursor
 from PyQt5.QtWidgets import QGraphicsItem, QToolTip
 from PyQt5.QtSvg import QSvgRenderer
+from objects import Arrow
 import os
-from PyQt5.QtGui import QDrag, QPixmap, QPainter, QFont, QPen, QColor, QBrush, QCursor, QTransform
-from PyQt5.QtSvg import QSvgRenderer
-from PyQt5.QtCore import QTimer, Qt
+
 
 class Artboard(QGraphicsView):
     arrowMoved = pyqtSignal()
@@ -17,7 +16,6 @@ class Artboard(QGraphicsView):
         self.grid = grid
         self.current_quadrant = None
 
-        self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setInteractive(True)
         scene.setBackgroundBrush(Qt.white) 
         self.infoTracker = infotracker
@@ -40,13 +38,14 @@ class Artboard(QGraphicsView):
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('text/plain'):
-            event.setDropAction(Qt.CopyAction)
+            item = self.itemAt(event.pos())
+            if isinstance(item, Arrow) and item.in_artboard:
+                event.setDropAction(Qt.MoveAction)
+            else:
+                event.setDropAction(Qt.CopyAction)
             event.accept()
         else:
             event.ignore()
-        item = self.itemAt(event.pos())
-        if isinstance(item, Arrow):
-            item.in_artboard = True
         super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event):
@@ -56,7 +55,7 @@ class Artboard(QGraphicsView):
             base_name = os.path.basename(dropped_svg)
             color, type_, rotation, quadrant = base_name.split('_')[:4]
             for item in self.scene().items():
-                if isinstance(item, Arrow):
+                if isinstance(item, Arrow) and not item.dragging:  # Change this line
                     if item.color == color:
                         event.ignore()
                         QToolTip.showText(QCursor.pos(), "Cannot add another arrow of the same color.")
@@ -65,6 +64,7 @@ class Artboard(QGraphicsView):
             QToolTip.hideText()  # Hide the tooltip when the event is accepted
         else:
             event.ignore()
+
 
     def dragLeaveEvent(self, event):
         item = self.itemAt(self.last_known_pos)
@@ -75,15 +75,24 @@ class Artboard(QGraphicsView):
 
     def dropEvent(self, event):
         if event.mimeData().hasFormat('text/plain'):
-            event.setDropAction(Qt.CopyAction)
+            event.setDropAction(Qt.MoveAction)
             event.accept()
             dropped_svg = event.mimeData().text()
 
-            self.arrow_item = Arrow(dropped_svg, self, self.infoTracker)
-            self.arrow_item.setScale(10.0)
+            # Check if the Arrow being dragged is already in the Artboard
+            for item in self.scene().items():
+                if isinstance(item, Arrow) and item.svg_file == dropped_svg and item.dragging:
+                    # If it is, just update its position
+                    item.setPos(self.mapToScene(event.pos()))
+                    break
+            else:
+                # If it's not, create a new Arrow
+                self.arrow_item = Arrow(dropped_svg, self, self.infoTracker)
+                self.arrow_item.setScale(10.0)
 
-            self.scene().addItem(self.arrow_item)
-            self.arrow_item.setPos(self.mapToScene(event.pos()))
+                self.scene().addItem(self.arrow_item)
+                self.arrow_item.setPos(self.mapToScene(event.pos()))
+
 
             if self.arrow_item.pos().y() < self.sceneRect().height() / 2:
                 if self.arrow_item.pos().x() < self.sceneRect().width() / 2:
@@ -120,6 +129,9 @@ class Artboard(QGraphicsView):
         else:
             event.ignore()
 
+        self.arrowMoved.emit()
+        print("Arrow moved")
+
 class ArrowMovementHandler:
     def __init__(self, artboard):
         self.artboard = artboard
@@ -129,7 +141,7 @@ class ArrowMovementHandler:
         self.drag = None  # Add this line
 
     def mousePressEvent(self, event):
-        items = self.items(event.pos())
+        items = self.artboard.items(event.pos())
         if items and items[0].flags() & QGraphicsItem.ItemIsMovable:
             if event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier:
                 items[0].setSelected(not items[0].isSelected())
@@ -139,7 +151,7 @@ class ArrowMovementHandler:
                 items[0].setSelected(True)
             self.dragging = items[0]
             self.dragOffset = self.mapToScene(event.pos()) - self.dragging.pos()
-            self.drag = Quadrant_Preview_Updater(self, self.dragging)
+            self.dragPreview = Quadrant_Preview_Updater(self, self.dragging)
 
         else:
             for item in self.scene().selectedItems():
@@ -159,17 +171,15 @@ class ArrowMovementHandler:
                 item.setPos(item.pos() + movement)
 
                 if isinstance(item, Arrow):
-                    if new_quadrant != item.quadrant:
-                        item.quadrant = new_quadrant
-                        self.arrowUpdater.update_svg(item, new_quadrant)
-                        self.drag.exec_(Qt.MoveAction)  # Call exec_ here
-
+                    item.quadrant = new_quadrant
+                    self.arrowUpdater.update_svg(item, new_quadrant)
+                    self.drag.exec_(Qt.MoveAction) 
+            print("Arrow dragging")
+            self.dragPreview.updatePixmap()
             self.arrowMoved.emit()
 
     def mouseReleaseEvent(self, event):
         self.dragging = None
-        self.setRubberBandSelectionMode(Qt.ContainsItemShape)
-        self.setRubberBandSelectionMode(Qt.IntersectsItemShape)
         super().mouseReleaseEvent(event)
 
 class Quadrant_Preview_Updater(QDrag):
@@ -221,6 +231,8 @@ class Quadrant_Preview_Updater(QDrag):
             new_renderer.render(painter)
             painter.end()
             self.setPixmap(pixmap)
+    # emit the arrowMoved signal
+        self.arrowMoved.emit()
 
 class QuadrantDeterminer:
     @staticmethod

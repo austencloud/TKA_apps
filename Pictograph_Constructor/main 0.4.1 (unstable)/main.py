@@ -52,7 +52,7 @@ class Main_Window(QWidget):
 
     def initArrowBox(self):
         arrow_box = QScrollArea(self)
-        arrowbox_scene = QGraphicsScene()  # Use a separate scene for the arrow box
+        arrowbox_scene = QGraphicsScene() 
         svgs_full_paths = []
         default_arrows = ['red_anti_r_ne.svg', 'red_iso_r_ne.svg', 'blue_anti_r_sw.svg', 'blue_iso_r_sw.svg']
         svg_item_count = 0
@@ -63,16 +63,16 @@ class Main_Window(QWidget):
         for i, svg in enumerate(svgs_full_paths):
             file_name = os.path.basename(svg)
             if file_name in default_arrows:
-                arrow_item = Arrow(svg, self.view, self.infoTracker)  # pass the QGraphicsView object here
+                arrow_item = Arrow(svg, self.view, self.infoTracker)
                 arrow_item.setFlag(QGraphicsItem.ItemIsMovable, True)
                 arrow_item.setFlag(QGraphicsItem.ItemIsSelectable, True)
                 arrow_item.setScale(self.SVG_SCALE)
                 arrow_item.setPos(0, svg_item_count * self.SVG_POS_Y)
-                arrowbox_scene.addItem(arrow_item)  # use arrowbox_scene here
+                arrowbox_scene.addItem(arrow_item)
                 svg_item_count += 1
 
-        view = QGraphicsView(arrowbox_scene)  # use arrowbox_scene here
-        view.setFrameShape(QFrame.NoFrame)  # remove the border
+        view = QGraphicsView(arrowbox_scene)
+        view.setFrameShape(QFrame.NoFrame)
         arrow_box.setWidget(view)
         arrow_box.setWidgetResizable(True)
         # set a fixed height and width
@@ -177,7 +177,6 @@ class Main_Window(QWidget):
 
         return masterbtnlayout
     
-
 class Checkbox_Manager():
     def __init__(self, artboard_view, grid):
         self.artboard_view = artboard_view
