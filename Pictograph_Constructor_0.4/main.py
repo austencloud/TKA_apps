@@ -264,12 +264,16 @@ class Info_Tracker:
                     blue_text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}<br>"
                     blue_text += f"Rotation: {attributes.get('rotation', 'N/A')}<br>"
                     blue_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
+                    blue_text += f"Start position: {attributes.get('start_position', 'N/A').capitalize()}<br>"
+                    blue_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
                     blue_text += "<br>"
                 elif color == 'red':
                     red_text += f"{color_text}<br>"
                     red_text += f"Quadrant: {attributes.get('quadrant', 'N/A').upper()}<br>"
                     red_text += f"Rotation: {attributes.get('rotation', 'N/A')}<br>"
                     red_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
+                    red_text += f"Start position: {attributes.get('start_position', 'N/A').capitalize()}<br>"
+                    red_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
                     red_text += "<br>"
         self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td></tr></table>")
 

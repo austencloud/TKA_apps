@@ -62,6 +62,7 @@ class Button_Handlers:
                 if new_renderer.isValid():
                     item.setSharedRenderer(new_renderer)
                     item.svg_file = new_svg
+                    item.update_positions()
                 else:
                     print("Failed to load SVG file:", new_svg)
             
@@ -84,11 +85,11 @@ class Button_Handlers:
             if new_renderer.isValid():
                 item.setSharedRenderer(new_renderer)
                 item.svg_file = new_svg
-
+                item.update_positions()
                 item.quadrant = item.quadrant.replace('.svg', '')
             else:
                 print("Failed to load SVG file:", new_svg)
-
+        
 
     def deleteArrow(self):
         for item in self.artboard.selectedItems():

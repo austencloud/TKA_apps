@@ -66,7 +66,6 @@ class Artboard(QGraphicsView):
         else:
             event.ignore()
 
-
     def dragLeaveEvent(self, event):
         item = self.itemAt(self.last_known_pos)
         if isinstance(item, Arrow):
@@ -183,6 +182,9 @@ class Artboard(QGraphicsView):
                     if new_renderer.isValid():
                         item.setSharedRenderer(new_renderer)
                         item.svg_file = new_svg
+
+                        # Update the start and end positions
+                        item.update_positions()
 
                         item.replacement_arrow_printed = False
                             #print the qualities of the replacement arrow just once

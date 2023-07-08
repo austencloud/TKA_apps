@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QApplication, QGraphicsItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QCursor
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
+
 import os
 
 class Arrow(QGraphicsSvgItem):
@@ -19,6 +20,8 @@ class Arrow(QGraphicsSvgItem):
         self.dragged_item = None
         self.infoTracker = infoTracker
         self.parse_filename()
+        self.start_position, self.end_position = self.arrow_positions.get(os.path.basename(svg_file), (None, None))
+
 
         if "_l_" in svg_file:
             self.orientation = "l"
@@ -154,5 +157,32 @@ class Arrow(QGraphicsSvgItem):
             'quadrant': self.quadrant,
             'rotation': self.rotation,
             'type': self.type,
+            'start_position': self.start_position,
+            'end_position': self.end_position,
         }
         return attributes
+
+    def update_positions(self):
+        # Update the start and end positions
+        self.start_position, self.end_position = self.arrow_positions.get(os.path.basename(self.svg_file), (None, None))
+
+    def generate_arrow_positions(color):
+        return {
+            f"{color}_anti_l_ne.svg": ("e", "n"),
+            f"{color}_anti_r_ne.svg": ("n", "e"),
+            f"{color}_anti_l_nw.svg": ("w", "n"),
+            f"{color}_anti_r_nw.svg": ("n", "w"),
+            f"{color}_anti_l_se.svg": ("e", "s"),
+            f"{color}_anti_r_se.svg": ("s", "e"),
+            f"{color}_anti_l_sw.svg": ("s", "w"),
+            f"{color}_anti_r_sw.svg": ("w", "s"),
+            f"{color}_iso_l_ne.svg": ("e", "n"),
+            f"{color}_iso_r_ne.svg": ("n", "e"),
+            f"{color}_iso_l_nw.svg": ("n", "w"),
+            f"{color}_iso_r_nw.svg": ("w", "n"),
+            f"{color}_iso_l_se.svg": ("s", "e"),
+            f"{color}_iso_r_se.svg": ("e", "s"),
+            f"{color}_iso_l_sw.svg": ("w", "s"),
+            f"{color}_iso_r_sw.svg": ("s", "w"),
+        }
+    arrow_positions = {**generate_arrow_positions("red"), **generate_arrow_positions("blue")}
