@@ -13,6 +13,7 @@ from PyQt5.QtXml import QDomDocument
 from upload_manager import UploadManager
 from data import positions, compass_mapping, generate_variations
 import json
+from button_handlers import Button_Handlers
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
     SVG_SCALE = 10.0
@@ -21,7 +22,13 @@ class Main_Window(QWidget):
     def __init__(self):
         super().__init__() 
         self.initUI()
+        self.scene = QGraphicsScene()  # Add this line
+        self.handlers = Button_Handlers(self.artboard, self.view, self.grid, self.scene, self)
         self.letterCombinations = self.loadLetterCombinations()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete:
+            self.handlers.deleteArrow()
 
     def loadLetterCombinations(self):
         try:
@@ -33,7 +40,7 @@ class Main_Window(QWidget):
     def saveLetterCombinations(self):
         with open('letterCombinations.json', 'w') as f:
             json.dump(self.letterCombinations, f)
-            
+
     def assignLetter(self):
         letter = self.letterInput.text().upper()
         if letter not in positions:

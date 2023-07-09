@@ -18,10 +18,6 @@ class Button_Handlers:
         self.scene = scene
         self.main_window = main_window
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Delete:
-            self.deleteArrow()
-
     def rotateArrow(self, direction):
         if self.view.grid is not None:
             scene_center = QPointF(self.view.width() / 2, self.view.height() / 2)
