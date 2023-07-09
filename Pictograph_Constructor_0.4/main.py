@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QLabel, QFileDialog, QCheckBox, QFrame
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QLabel, QFileDialog, QCheckBox, QLineEdit, QFrame
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
 from objects import Arrow
@@ -12,7 +12,7 @@ from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
 from PyQt5.QtXml import QDomDocument
 from upload_manager import UploadManager
 from data import positions, compass_mapping
-
+import json
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
     SVG_SCALE = 10.0
@@ -21,6 +21,19 @@ class Main_Window(QWidget):
     def __init__(self):
         super().__init__() 
         self.initUI()
+        self.letterCombinations = self.loadLetterCombinations()
+
+    def loadLetterCombinations(self):
+        try:
+            with open('letterCombinations.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
+
+    def saveLetterCombinations(self):
+        with open('letterCombinations.json', 'w') as f:
+            json.dump(self.letterCombinations, f)
+
 
     def loadSvg(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open SVG", "", "SVG files (*.svg)")
@@ -48,6 +61,14 @@ class Main_Window(QWidget):
         right_layout.addWidget(self.view)
         button_layout = self.initButtons()  
         right_layout.addLayout(button_layout)
+        # Add a text input field for entering a letter
+        self.letterInput = QLineEdit(self)
+        right_layout.addWidget(self.letterInput)
+
+        # Add a button for assigning the entered letter to the selected combination of arrows
+        self.assignLetterButton = QPushButton("Assign Letter", self)
+        self.assignLetterButton.clicked.connect(self.assignLetter)
+        right_layout.addWidget(self.assignLetterButton)
         self.checkbox_manager = Checkbox_Manager(self.view, self.grid)
         right_layout.addWidget(self.checkbox_manager.getCheckbox())
 
@@ -125,8 +146,6 @@ class Main_Window(QWidget):
         buttonlayout.addLayout(buttonstack2)
         masterbtnlayout.addLayout(buttonlayout)
 
-
-
         self.deleteButton = QPushButton("Delete")
         self.deleteButton.clicked.connect(handlers.deleteArrow)
         buttonstack1.addWidget(self.deleteButton)
@@ -155,7 +174,6 @@ class Main_Window(QWidget):
         self.exportAsPNGButton.clicked.connect(handlers.exportArtboard)
         masterbtnlayout.addWidget(self.exportAsPNGButton)
 
-        #add an export as svg button
         self.exportAsSVGButton = QPushButton("Export to SVG")
         self.exportAsSVGButton.clicked.connect(handlers.export_to_svg)
         masterbtnlayout.addWidget(self.exportAsSVGButton)
@@ -182,6 +200,41 @@ class Main_Window(QWidget):
         # self.uploadButton.setFont(button_font)
 
         return masterbtnlayout
+    
+    def assignLetter(self):
+        # Get the entered letter
+        letter = self.letterInput.text().upper()
+
+        # Check if the entered letter is valid
+        if letter not in positions:
+            print(f"{letter} is not a valid letter.")
+            return
+
+        # Get the currently selected combination of arrows
+        selected_items = self.artboard.selectedItems()
+        if len(selected_items) != 2 or not all(isinstance(item, Arrow) for item in selected_items):
+            print("Please select a combination of two arrows.")
+            return
+
+
+        # Create a Letter instance with the selected arrows
+        letter_instance = Letter(selected_items[0], selected_items[1])
+
+        # Assign the entered letter to the Letter instance
+        letter_instance.assign_letter(letter)
+
+        # Store the arrow combination
+        if letter not in self.letterCombinations:
+            self.letterCombinations[letter] = []
+        self.letterCombinations[letter].append((selected_items[0].get_attributes(), selected_items[1].get_attributes()))
+
+        # Save the letter combinations to a file
+        self.saveLetterCombinations()
+
+        print(f"Assigned {letter} to the selected combination of arrows.")
+
+        #update info tracker
+        self.infoTracker.update()
 
 class Checkbox_Manager():
     def __init__(self, artboard_view, grid):
@@ -233,17 +286,13 @@ class Info_Tracker:
         self.artboard = artboard
         self.label = label
         self.previous_state = self.getCurrentState()
-        #increase font size
         self.label.setFont(QFont('Helvetica', 14))
-        #make it hug the top
-        #make the text in the label selectable and copyable
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
         self.label.setAlignment(Qt.AlignTop)
+        self.letterCombinations = self.loadLetterCombinations()
 
     def getCurrentState(self):
         state = {}
-        if self.artboard is None:
-            return state
         for item in self.artboard.items():
             if isinstance(item, Arrow):
                 state[item] = item.get_attributes()
@@ -255,8 +304,14 @@ class Info_Tracker:
             self.update()
             self.previous_state = current_state
     
+    def loadLetterCombinations(self):
+        try:
+            with open('letterCombinations.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
+
     def get_positional_relationship(self, start1, end1, start2, end2):
-        # Map the start and end positions to their corresponding compass points
         start1_compass = Arrow.get_position_from_directions(start1, start1)
         end1_compass = Arrow.get_position_from_directions(end1, end1)
         start2_compass = Arrow.get_position_from_directions(start2, start2)
@@ -279,7 +334,6 @@ class Info_Tracker:
             end_position = "gamma"
 
         return start_position + " to " + end_position
-
             
     def generate_arrow_positions():
         arrow_positions = {}
@@ -302,20 +356,19 @@ class Info_Tracker:
                             end_position, start_position = ("n", "s")
                     arrow_positions[filename] = (start_position, end_position)
         return arrow_positions
-
-
+    
     def update(self):
+        self.letterCombinations = self.loadLetterCombinations()
+
         blue_text = "<h2>Left</h2>"
         red_text = "<h2>Right</h2>"
         letter_text = "<h2>Letter</h2>"
 
-
+        current_combination = []
         for item in self.artboard.items():
             if isinstance(item, Arrow):
                 attributes = item.get_attributes()
-                start_position1, end_position1 = attributes.get('start_position', 'N/A'), attributes.get('end_position', 'N/A')
-                start_position2, end_position2 = attributes.get('start_position', 'N/A'), attributes.get('end_position', 'N/A')
-                positional_relationship = self.get_positional_relationship(start_position1, end_position1, start_position2, end_position2)
+                current_combination.append(attributes)
                 color = attributes.get('color', 'N/A')
                 color_text = f"<font color='{color}'>Color: {color}</font>"
                 if color == 'blue':
@@ -325,8 +378,6 @@ class Info_Tracker:
                     blue_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
                     blue_text += f"Start position: {attributes.get('start_position', 'N/A').capitalize()}<br>"
                     blue_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
-                    blue_text += f"Positional relationship: {positional_relationship}<br>"
-
                     blue_text += "<br>"
                 elif color == 'red':
                     red_text += f"{color_text}<br>"
@@ -335,28 +386,25 @@ class Info_Tracker:
                     red_text += f"Type: {attributes.get('type', 'N/A').capitalize()}<br>"
                     red_text += f"Start position: {attributes.get('start_position', 'N/A').capitalize()}<br>"
                     red_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
-                    red_text += f"Positional relationship: {positional_relationship}<br>"
-
                     red_text += "<br>"
+
+        # Sort the current combination
+        current_combination = sorted(current_combination, key=lambda x: x['color'])
+
+        for letter, combinations in self.letterCombinations.items():
+            combinations = [sorted(combination, key=lambda x: x['color']) for combination in combinations]
+            if current_combination in combinations:
+                letter_text += f"<h3 style='font-size: 50px'>{letter}</h3>"
+
+
         self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td><td width=300>" + letter_text + "</td></tr></table>")
-
-info_tracker = Info_Tracker(None, None)  # Create an instance of Info_Tracker
-
-arrow_positions = info_tracker.generate_arrow_positions()  # Call the method on the instance
-
-start_position1, end_position1 = arrow_positions["red_iso_l_ne.svg"]
-start_position2, end_position2 = arrow_positions["blue_iso_r_se.svg"]
-
-positional_relationship = info_tracker.get_positional_relationship(start_position1, end_position1, start_position2, end_position2)
-
-print(positional_relationship)  # Outputs: "beta to alpha"
-
-
+       
 class Letter:
     def __init__(self, arrow1, arrow2):
         self.arrow1 = arrow1
         self.arrow2 = arrow2
-        
+        self.letter = None  # Add an attribute for the letter
+
     def get_start_position(self):
         # Get the start positions of the two arrows
         start_position1 = Arrow.get_arrow_start_position(self.arrow1)
@@ -373,6 +421,12 @@ class Letter:
         # Return the position corresponding to the pair of end positions
         return Arrow.get_position_from_directions(end_position1, end_position2)
 
+    def assign_letter(self, letter):
+        # Check if the start and end positions match the positions for the letter
+        if (self.get_start_position(), self.get_end_position()) == positions[letter]:
+            self.letter = letter  # Assign the letter
+        else:
+            print(f"The start and end positions do not match the positions for {letter}.")
 
 app = QApplication(sys.argv)
 ex = Main_Window()

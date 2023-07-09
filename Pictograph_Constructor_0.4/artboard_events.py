@@ -115,10 +115,12 @@ class Artboard(QGraphicsView):
             if new_renderer.isValid():
                 self.arrow_item.setSharedRenderer(new_renderer)
                 self.arrow_item.svg_file = new_svg
+                self.arrowMoved.emit()
             else:
                 print("Failed to load SVG file:", new_svg)
         else:
             event.ignore()
+        self.arrowMoved.emit()
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())

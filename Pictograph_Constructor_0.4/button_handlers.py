@@ -8,6 +8,7 @@ from upload_manager import UploadManager
 from objects import Arrow
 
 class Button_Handlers:
+    arrowMoved = pyqtSignal()
     SVG_SCALE = 10.0
 
     def __init__(self, artboard, view, grid, scene, main_window):
@@ -65,7 +66,10 @@ class Button_Handlers:
                     item.update_positions()
                 else:
                     print("Failed to load SVG file:", new_svg)
+
+            self.view.arrowMoved.emit()
             
+
     def mirrorArrow(self):
         self.view.arrowMoved.emit()
         for item in self.artboard.selectedItems():

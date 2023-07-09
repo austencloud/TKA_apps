@@ -199,15 +199,21 @@ class Arrow(QGraphicsSvgItem):
         # Define the mapping from pairs of directions to positions
         directions_positions = {
             ("n", "s"): "alpha",
+            ("s", "n"): "alpha",
             ("w", "e"): "alpha",
+            ("e", "w"): "alpha",
             ("e", "e"): "beta",
             ("s", "s"): "beta",
             ("w", "w"): "beta",
             ("n", "n"): "beta",
             ("n", "e"): "gamma",
+            ("e", "n"): "gamma",
             ("e", "s"): "gamma",
+            ("s", "e"): "gamma",
             ("s", "w"): "gamma",
+            ("w", "s"): "gamma",
             ("w", "n"): "gamma",
+            ("n", "w"): "gamma",
         }
 
         # Return the position corresponding to the pair of directions
