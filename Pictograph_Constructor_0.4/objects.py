@@ -1,10 +1,11 @@
 from PyQt5.QtWidgets import QApplication, QGraphicsItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QCursor
-from PyQt5.QtCore import Qt, QMimeData
+from PyQt5.QtCore import Qt, QMimeData, pyqtSignal
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 import os
 
 class Arrow(QGraphicsSvgItem):
+    attributesChanged = pyqtSignal()
     SVG_SCALE = 10.0
     def __init__(self, svg_file, artboard, infoTracker):
         super().__init__(svg_file)
@@ -135,8 +136,9 @@ class Arrow(QGraphicsSvgItem):
         
     def mouseReleaseEvent(self, event):
         self.dragging = False 
-        self.dragged_item = None  # set dragged_item to None when the drag ends
-
+        self.dragged_item = None 
+        self.infoTracker.update() 
+        
     def shape(self):
         path = QPainterPath()
         path.addRect(self.renderer().boundsOnElement(self.elementId()))
@@ -164,6 +166,7 @@ class Arrow(QGraphicsSvgItem):
     def update_positions(self):
         # Update the start and end positions
         self.start_position, self.end_position = self.arrow_positions.get(os.path.basename(self.svg_file), (None, None))
+        self.attributesChanged.emit()
 
     def generate_arrow_positions(color):
         return {

@@ -109,18 +109,21 @@ class Artboard(QGraphicsView):
             else:
                 print(f"Unexpected svg_file: {self.arrow_item.svg_file}")
                 new_svg = self.arrow_item.svg_file
+                self.arrowMoved.emit()  # emit the signal after the quadrant of the arrow is updated
 
+            
             new_renderer = QSvgRenderer(new_svg)
 
             if new_renderer.isValid():
                 self.arrow_item.setSharedRenderer(new_renderer)
                 self.arrow_item.svg_file = new_svg
+                self.arrow_item.quadrant = quadrant
                 self.arrowMoved.emit()
+                QTimer.singleShot(0, self.infoTracker.update)
             else:
                 print("Failed to load SVG file:", new_svg)
         else:
             event.ignore()
-        self.arrowMoved.emit()
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())

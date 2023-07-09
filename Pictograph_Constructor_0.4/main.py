@@ -14,6 +14,7 @@ from upload_manager import UploadManager
 from data import positions, compass_mapping, generate_variations
 import json
 from button_handlers import Button_Handlers
+
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
     SVG_SCALE = 10.0
@@ -25,6 +26,40 @@ class Main_Window(QWidget):
         self.scene = QGraphicsScene()  # Add this line
         self.handlers = Button_Handlers(self.artboard, self.view, self.grid, self.scene, self)
         self.letterCombinations = self.loadLetterCombinations()
+
+    def initUI(self):
+        main_layout = QHBoxLayout()
+        right_layout = QVBoxLayout()
+        self.label = QLabel(self)  # create a QLabel instance
+        self.artboard = QGraphicsScene()
+        self.setGeometry(300, 300, 1600, 1400)  
+
+        self.infoTracker = Info_Tracker(self.artboard, self.label)
+        self.view = self.initArtboard() 
+        self.view.arrowMoved.connect(self.infoTracker.update)  # connect the signal to the update method
+        arrowbox = self.initArrowBox()
+        main_layout.addWidget(arrowbox)
+        main_layout.setAlignment(arrowbox, Qt.AlignTop)
+        main_layout.addLayout(right_layout)
+        self.setLayout(main_layout)
+        self.setWindowTitle('Drag & Drop')
+        self.show()
+        self.grid = Grid('images\\grid\\grid.svg')
+        right_layout.addWidget(self.view)
+        button_layout = self.initButtons()  
+        right_layout.addLayout(button_layout)
+        # Add a text input field for entering a letter
+        self.letterInput = QLineEdit(self)
+        right_layout.addWidget(self.letterInput)
+
+        # Add a button for assigning the entered letter to the selected combination of arrows
+        self.assignLetterButton = QPushButton("Assign Letter", self)
+        self.assignLetterButton.clicked.connect(self.assignLetter)
+        right_layout.addWidget(self.assignLetterButton)
+        self.checkbox_manager = Checkbox_Manager(self.view, self.grid)
+        right_layout.addWidget(self.checkbox_manager.getCheckbox())
+
+        right_layout.addWidget(self.label)  # add the label to the layout
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
@@ -67,46 +102,10 @@ class Main_Window(QWidget):
         print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
         self.infoTracker.update()
 
-
-
     def loadSvg(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open SVG", "", "SVG files (*.svg)")
         if fileName:
             self.svgWidget.load(fileName)
-
-    def initUI(self):
-        main_layout = QHBoxLayout()
-        right_layout = QVBoxLayout()
-        self.label = QLabel(self)  # create a QLabel instance
-        self.artboard = QGraphicsScene()
-        self.setGeometry(300, 300, 1600, 1400)  
-
-        self.infoTracker = Info_Tracker(self.artboard, self.label)
-        self.view = self.initArtboard() 
-        self.view.arrowMoved.connect(self.infoTracker.update)  # connect the signal to the update method
-        arrowbox = self.initArrowBox()
-        main_layout.addWidget(arrowbox)
-        main_layout.setAlignment(arrowbox, Qt.AlignTop)
-        main_layout.addLayout(right_layout)
-        self.setLayout(main_layout)
-        self.setWindowTitle('Drag & Drop')
-        self.show()
-        self.grid = Grid('images\\grid\\grid.svg')
-        right_layout.addWidget(self.view)
-        button_layout = self.initButtons()  
-        right_layout.addLayout(button_layout)
-        # Add a text input field for entering a letter
-        self.letterInput = QLineEdit(self)
-        right_layout.addWidget(self.letterInput)
-
-        # Add a button for assigning the entered letter to the selected combination of arrows
-        self.assignLetterButton = QPushButton("Assign Letter", self)
-        self.assignLetterButton.clicked.connect(self.assignLetter)
-        right_layout.addWidget(self.assignLetterButton)
-        self.checkbox_manager = Checkbox_Manager(self.view, self.grid)
-        right_layout.addWidget(self.checkbox_manager.getCheckbox())
-
-        right_layout.addWidget(self.label)  # add the label to the layout
 
     def initArrowBox(self):
         arrow_box = QScrollArea(self)
@@ -127,6 +126,7 @@ class Main_Window(QWidget):
                 arrow_item.setScale(self.SVG_SCALE)
                 arrow_item.setPos(0, svg_item_count * self.SVG_POS_Y)
                 arrowbox_scene.addItem(arrow_item)  # use arrowbox_scene here
+                arrow_item.attributesChanged.connect(self.infoTracker.update)  # add this line
                 svg_item_count += 1
 
         view = QGraphicsView(arrowbox_scene)  # use arrowbox_scene here
@@ -261,7 +261,6 @@ class Main_Window(QWidget):
         print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
         self.infoTracker.update()
 
-
 class Checkbox_Manager():
     def __init__(self, artboard_view, grid):
         self.artboard_view = artboard_view
@@ -276,7 +275,6 @@ class Checkbox_Manager():
         # Load the SVG file
         self.grid_renderer = QSvgRenderer()
         self.grid_renderer.load('images\\grid\\grid.svg')
-
 
     def getCheckbox(self):
         return self.lineCheckbox
@@ -306,7 +304,6 @@ class Checkbox_Manager():
 
         # Update the Grid object with the new SVG content
         self.grid.updateSvgContent(self.grid_renderer)
-
 class Info_Tracker:
     def __init__(self, artboard, label):
         self.artboard = artboard
@@ -384,13 +381,25 @@ class Info_Tracker:
         return arrow_positions
     
     def update(self):
-        self.letterCombinations = self.loadLetterCombinations()
+        current_combination = []
 
+        for item in self.artboard.items():
+            if isinstance(item, Arrow):
+                attributes = item.get_attributes()
+                current_combination.append(attributes)
+
+        current_combination = sorted(current_combination, key=lambda x: x['color'])
+
+        self.letterCombinations = self.loadLetterCombinations()
         blue_text = "<h2>Left</h2>"
         red_text = "<h2>Right</h2>"
         letter_text = "<h2>Letter</h2>"
 
-        current_combination = []
+        for letter, combinations in self.letterCombinations.items():
+            combinations = [sorted(combination, key=lambda x: x['color']) for combination in combinations]
+            if current_combination in combinations:
+                letter_text += f"<h3 style='font-size: 50px'>{letter}</h3>"
+
         for item in self.artboard.items():
             if isinstance(item, Arrow):
                 attributes = item.get_attributes()
@@ -414,16 +423,8 @@ class Info_Tracker:
                     red_text += f"End position: {attributes.get('end_position', 'N/A').capitalize()}<br>"
                     red_text += "<br>"
 
-        # Sort the current combination
-        current_combination = sorted(current_combination, key=lambda x: x['color'])
 
-        for letter, combinations in self.letterCombinations.items():
-            combinations = [sorted(combination, key=lambda x: x['color']) for combination in combinations]
-            if current_combination in combinations:
-                letter_text += f"<h3 style='font-size: 50px'>{letter}</h3>"
-
-
-        self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td><td width=300>" + letter_text + "</td></tr></table>")
+        self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td><td width=100>" + letter_text + "</td></tr></table>")
        
 class Letter:
     def __init__(self, arrow1, arrow2):
