@@ -60,3 +60,27 @@ compass_mapping = {
     "gamma": ("s", "w"),
     "gamma": ("w", "n"),
 }
+
+def generate_variations(arrow_combination):
+    # Define the mappings for rotations and reflections
+    rotation_mapping = {"n": "e", "e": "s", "s": "w", "w": "n"}
+    vertical_reflection_mapping = {"n": "s", "s": "n", "e": "e", "w": "w"}
+    horizontal_reflection_mapping = {"n": "n", "s": "s", "e": "w", "w": "e"}
+
+    # Generate the rotated versions
+    rotated_versions = [arrow_combination]
+    for _ in range(3):
+        arrow_combination = [{**arrow, "start_position": rotation_mapping[arrow["start_position"]],
+                              "end_position": rotation_mapping[arrow["end_position"]]} for arrow in arrow_combination]
+        rotated_versions.append(arrow_combination)
+
+    # Generate the reflected versions
+    reflected_versions = []
+    for version in rotated_versions:
+        vertical_reflected_version = [{**arrow, "start_position": vertical_reflection_mapping[arrow["start_position"]],
+                                       "end_position": vertical_reflection_mapping[arrow["end_position"]]} for arrow in version]
+        horizontal_reflected_version = [{**arrow, "start_position": horizontal_reflection_mapping[arrow["start_position"]],
+                                         "end_position": horizontal_reflection_mapping[arrow["end_position"]]} for arrow in version]
+        reflected_versions.extend([vertical_reflected_version, horizontal_reflected_version])
+
+    return rotated_versions + reflected_versions

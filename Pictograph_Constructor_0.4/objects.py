@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QApplication, QGraphicsItem
 from PyQt5.QtGui import QPixmap, QDrag, QImage, QPainter, QPainterPath, QCursor
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
-
 import os
 
 class Arrow(QGraphicsSvgItem):
@@ -133,7 +132,7 @@ class Arrow(QGraphicsSvgItem):
             self.drag.setPixmap(pixmap)
 
         self.drag.exec_(Qt.CopyAction | Qt.MoveAction)
-
+        
     def mouseReleaseEvent(self, event):
         self.dragging = False 
         self.dragged_item = None  # set dragged_item to None when the drag ends

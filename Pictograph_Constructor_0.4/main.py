@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
 from PyQt5.QtXml import QDomDocument
 from upload_manager import UploadManager
-from data import positions, compass_mapping
+from data import positions, compass_mapping, generate_variations
 import json
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
@@ -200,7 +200,7 @@ class Main_Window(QWidget):
         # self.uploadButton.setFont(button_font)
 
         return masterbtnlayout
-    
+        
     def assignLetter(self):
         # Get the entered letter
         letter = self.letterInput.text().upper()
@@ -216,25 +216,30 @@ class Main_Window(QWidget):
             print("Please select a combination of two arrows.")
             return
 
-
         # Create a Letter instance with the selected arrows
         letter_instance = Letter(selected_items[0], selected_items[1])
 
         # Assign the entered letter to the Letter instance
         letter_instance.assign_letter(letter)
 
-        # Store the arrow combination
+        # Generate all variations of the selected combination of arrows
+        arrow_combination = [item.get_attributes() for item in selected_items]
+        variations = generate_variations(arrow_combination)
+
+        # Store all variations of the arrow combination
         if letter not in self.letterCombinations:
             self.letterCombinations[letter] = []
-        self.letterCombinations[letter].append((selected_items[0].get_attributes(), selected_items[1].get_attributes()))
+        for variation in variations:
+            self.letterCombinations[letter].append(variation)
 
         # Save the letter combinations to a file
         self.saveLetterCombinations()
 
-        print(f"Assigned {letter} to the selected combination of arrows.")
+        print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
 
-        #update info tracker
+        # Update info tracker
         self.infoTracker.update()
+
 
 class Checkbox_Manager():
     def __init__(self, artboard_view, grid):
