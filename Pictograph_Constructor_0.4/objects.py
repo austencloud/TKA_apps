@@ -217,3 +217,26 @@ class Arrow(QGraphicsSvgItem):
 
         # Return the position corresponding to the pair of directions
         return directions_positions.get((direction1, direction2))
+    
+    def update_quadrant(self):
+        # Determine the quadrant based on the start and end positions
+        if self.start_position == "n":
+            if self.end_position == "e":
+                self.quadrant = "ne"
+            else:  # self.end_position == "w"
+                self.quadrant = "nw"
+        elif self.start_position == "s":
+            if self.end_position == "e":
+                self.quadrant = "se"
+            else:  # self.end_position == "w"
+                self.quadrant = "sw"
+        elif self.start_position == "e":
+            if self.end_position == "n":
+                self.quadrant = "ne"
+            else:
+                self.quadrant = "se"
+        elif self.start_position == "w":
+            if self.end_position == "n":
+                self.quadrant = "nw"
+            else:
+                self.quadrant = "sw"

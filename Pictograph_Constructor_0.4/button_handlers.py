@@ -64,11 +64,12 @@ class Button_Handlers:
                     item.setSharedRenderer(new_renderer)
                     item.svg_file = new_svg
                     item.update_positions()
+                    item.update_quadrant()
                 else:
                     print("Failed to load SVG file:", new_svg)
 
             self.view.arrowMoved.emit()
-            
+
 
     def mirrorArrow(self):
         self.view.arrowMoved.emit()
@@ -91,6 +92,7 @@ class Button_Handlers:
                 item.svg_file = new_svg
                 item.update_positions()
                 item.quadrant = item.quadrant.replace('.svg', '')
+                item.update_quadrant()
             else:
                 print("Failed to load SVG file:", new_svg)
         

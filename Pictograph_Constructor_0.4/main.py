@@ -33,6 +33,33 @@ class Main_Window(QWidget):
     def saveLetterCombinations(self):
         with open('letterCombinations.json', 'w') as f:
             json.dump(self.letterCombinations, f)
+            
+    def assignLetter(self):
+        letter = self.letterInput.text().upper()
+        if letter not in positions:
+            print(f"{letter} is not a valid letter.")
+            return
+        selected_items = self.artboard.selectedItems()
+        if len(selected_items) != 2 or not all(isinstance(item, Arrow) for item in selected_items):
+            print("Please select a combination of two arrows.")
+            return
+        letter_instance = Letter(selected_items[0], selected_items[1])
+        letter_instance.assign_letter(letter)
+
+        arrow_combination = [item.get_attributes() for item in selected_items]
+        variations = generate_variations(arrow_combination)
+        print(f"Generated {len(variations)} variations for the selected combination of arrows.")
+        print(f"{variations}")
+        if letter not in self.letterCombinations:
+            self.letterCombinations[letter] = []
+        for variation in variations:
+            self.letterCombinations[letter].append(variation)
+
+        self.saveLetterCombinations()
+
+        print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
+        self.infoTracker.update()
+
 
 
     def loadSvg(self):
@@ -202,42 +229,29 @@ class Main_Window(QWidget):
         return masterbtnlayout
         
     def assignLetter(self):
-        # Get the entered letter
         letter = self.letterInput.text().upper()
-
-        # Check if the entered letter is valid
         if letter not in positions:
             print(f"{letter} is not a valid letter.")
             return
-
-        # Get the currently selected combination of arrows
         selected_items = self.artboard.selectedItems()
         if len(selected_items) != 2 or not all(isinstance(item, Arrow) for item in selected_items):
             print("Please select a combination of two arrows.")
             return
-
-        # Create a Letter instance with the selected arrows
         letter_instance = Letter(selected_items[0], selected_items[1])
-
-        # Assign the entered letter to the Letter instance
         letter_instance.assign_letter(letter)
 
-        # Generate all variations of the selected combination of arrows
         arrow_combination = [item.get_attributes() for item in selected_items]
         variations = generate_variations(arrow_combination)
-
-        # Store all variations of the arrow combination
+        print(f"Generated {len(variations)} variations for the selected combination of arrows.")
+        print(f"{variations}")
         if letter not in self.letterCombinations:
             self.letterCombinations[letter] = []
         for variation in variations:
             self.letterCombinations[letter].append(variation)
 
-        # Save the letter combinations to a file
         self.saveLetterCombinations()
 
         print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
-
-        # Update info tracker
         self.infoTracker.update()
 
 
