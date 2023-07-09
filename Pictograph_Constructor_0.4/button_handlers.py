@@ -153,6 +153,7 @@ class Button_Handlers:
     def selectAll(self):
         for item in self.artboard.items():
             item.setSelected(True)
+    
     def deselectAll(self):
         for item in self.artboard.selectedItems():
             item.setSelected(False)
