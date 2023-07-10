@@ -80,6 +80,8 @@ class Artboard(QGraphicsView):
 
             self.arrow_item = Arrow(dropped_svg, self, self.infoTracker)
             self.arrow_item.setScale(10.0)
+            self.arrow_item.attributesChanged.connect(self.delayedUpdate)
+
             
 
             self.scene().addItem(self.arrow_item)
@@ -123,7 +125,7 @@ class Artboard(QGraphicsView):
                 print("Failed to load SVG file:", new_svg)
         else:
             event.ignore()
-
+        self.arrowMoved.emit()
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())
@@ -198,14 +200,20 @@ class Artboard(QGraphicsView):
 
                     else:
                         print("Failed to load SVG file:", new_svg)
-                    self.arrowMoved.emit()  # emit the signal after the item's position has been updated
+                      # emit the signal after the item's position has been updated
             self.arrowMoved.emit()
 
     def mouseReleaseEvent(self, event):
         self.dragging = None
         self.setRubberBandSelectionMode(Qt.ContainsItemShape)
         self.setRubberBandSelectionMode(Qt.IntersectsItemShape)
+        self.arrowMoved.emit()  # emit the signal when the arrow is dropped
+
         super().mouseReleaseEvent(event)
+
+    def delayedUpdate(self):
+        QTimer.singleShot(0, self.infoTracker.update)
+
 
 class Update_Quadrant_Preview(QDrag):
     def __init__(self, source, arrow_item, *args, **kwargs):

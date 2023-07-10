@@ -5,7 +5,7 @@ from PyQt5.QtSvg import QSvgRenderer, QGraphicsSvgItem
 import os
 
 class Arrow(QGraphicsSvgItem):
-    attributesChanged = pyqtSignal()
+
     SVG_SCALE = 10.0
     def __init__(self, svg_file, artboard, infoTracker):
         super().__init__(svg_file)
@@ -138,7 +138,9 @@ class Arrow(QGraphicsSvgItem):
         self.dragging = False 
         self.dragged_item = None 
         self.infoTracker.update() 
-        
+
+
+
     def shape(self):
         path = QPainterPath()
         path.addRect(self.renderer().boundsOnElement(self.elementId()))
@@ -166,7 +168,8 @@ class Arrow(QGraphicsSvgItem):
     def update_positions(self):
         # Update the start and end positions
         self.start_position, self.end_position = self.arrow_positions.get(os.path.basename(self.svg_file), (None, None))
-        self.attributesChanged.emit()
+
+
 
     def generate_arrow_positions(color):
         return {
@@ -187,6 +190,7 @@ class Arrow(QGraphicsSvgItem):
             f"{color}_iso_l_sw.svg": ("w", "s"),
             f"{color}_iso_r_sw.svg": ("s", "w"),
         }
+    
     arrow_positions = {**generate_arrow_positions("red"), **generate_arrow_positions("blue")}
 
     def get_arrow_start_position(arrow):
@@ -220,6 +224,7 @@ class Arrow(QGraphicsSvgItem):
 
         # Return the position corresponding to the pair of directions
         return directions_positions.get((direction1, direction2))
+    
     
     def update_quadrant(self):
         # Determine the quadrant based on the start and end positions
