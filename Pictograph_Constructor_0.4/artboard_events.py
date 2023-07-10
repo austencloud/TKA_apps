@@ -119,11 +119,11 @@ class Artboard(QGraphicsView):
                 self.arrow_item.svg_file = new_svg
                 self.arrow_item.quadrant = quadrant
                 self.arrowMoved.emit()
-                QTimer.singleShot(0, self.infoTracker.update)
             else:
                 print("Failed to load SVG file:", new_svg)
         else:
             event.ignore()
+
 
     def mousePressEvent(self, event):
         items = self.items(event.pos())
