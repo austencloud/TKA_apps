@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QTextEdit, QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QLabel, QFileDialog, QCheckBox, QLineEdit, QFrame
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QScrollArea, QVBoxLayout, QGraphicsScene, QGraphicsView, QPushButton, QGraphicsItem, QLabel, QFileDialog, QCheckBox, QLineEdit, QFrame
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QTransform, QFont
 from objects import Arrow
@@ -8,13 +8,13 @@ from artboard_events import Artboard
 from button_handlers import Button_Handlers
 from grid import Grid
 from PyQt5.QtWidgets import QFileDialog
-from PyQt5.QtSvg import QSvgWidget, QSvgRenderer
+from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtXml import QDomDocument
 from upload_manager import UploadManager
 from data import positions, compass_mapping, generate_variations
 import json
 from button_handlers import Button_Handlers
-
+import random
 class Main_Window(QWidget):
     ARROW_DIR = 'images\\arrows'
     SVG_SCALE = 10.0
@@ -80,63 +80,56 @@ class Main_Window(QWidget):
             ['M', 'N', 'O'],
             ['P', 'Q', 'R'],
             ['S', 'T', 'U', 'V'],
-            # ['W', 'X', 'Y', 'Z'],
-            # ['Σ', 'Δ', 'θ', 'Ω'],
-            # ['Φ', 'Ψ', 'Λ'],
-            # ['W-', 'X-', 'Y-', 'Z-'],
-            # ['Σ-', 'Δ-', 'θ-', 'Ω-'],
-            # ['Φ-', 'Ψ-', 'Λ-'],
-            # ['α', 'β', 'Γ']
         ]
 
-        # Add the letter buttons
         for row in letter_rows:
             row_layout = QHBoxLayout()
-            #align the contents to the lft
-            row_layout.setAlignment(Qt.AlignLeft)
-            #make the rows minimum height so the buttons stick to the top
+            row_layout.setAlignment(Qt.AlignTop)
             for letter in row:
                 button = QPushButton(letter, self)
                 font = QFont()
                 font.setPointSize(20)
                 button.setFont(font)
                 button.setFixedSize(80, 80)
+                button.clicked.connect(lambda _, l=letter: self.generatePictograph(l))  # Connect the button to the generatePictograph function
                 row_layout.addWidget(button)
             word_constructor_layout.addLayout(row_layout)
-
-        # # Add the "Clear", "Save", and "Generate Random Word" buttons
-        # clear_button = QPushButton("Clear", self)
-        # save_button = QPushButton("Save", self)
-        # generate_random_word_button = QPushButton("Generate Random Word", self)
-        # word_constructor_layout.addWidget(clear_button)
-        # word_constructor_layout.addWidget(save_button)
-        # word_constructor_layout.addWidget(generate_random_word_button)
-
-        # # Add the state label, the start position label, and the end positions label
-        # state_label = QLabel("State: ", self)
-        # start_position_label = QLabel("Start Position: ", self)
-        # end_positions_label = QLabel("End Positions: ", self)
-        # word_constructor_layout.addWidget(state_label)
-        # word_constructor_layout.addWidget(start_position_label)
-        # word_constructor_layout.addWidget(end_positions_label)
-
-        # # Add the sequence text field and the random word length text field
-        # sequence_text_field = QLineEdit(self)
-        # random_word_length_text_field = QLineEdit(self)
-        # word_constructor_layout.addWidget(sequence_text_field)
-        # word_constructor_layout.addWidget(random_word_length_text_field)
-
-        # # Add the "Autofill Mode" checkbox
-        # autofill_mode_checkbox = QCheckBox("Autofill Mode", self)
-        # word_constructor_layout.addWidget(autofill_mode_checkbox)
-
-        # # Add the saved text field with a scrollbar
-        # saved_text_field = QTextEdit(self)
-        # word_constructor_layout.addWidget(saved_text_field)
-
-        # Add the Word Constructor's layout to the main layout
         main_layout.addLayout(word_constructor_layout)
 
+    def generatePictograph(self, letter):
+        # Get the list of possible combinations for the letter
+        combinations = self.letterCombinations.get(letter, [])
+        if not combinations:
+            print(f"No combinations found for letter {letter}")
+            return
+
+        # Choose a combination at random
+        combination = random.choice(combinations)
+        attributes = self.letterCombinations[letter]
+        for combination in combinations:
+            svg = f"images/arrows/{combination['color']}_{combination['type']}_{combination['rotation']}__{combination['quadrant']}.svg"
+            arrow = Arrow(svg, self.view, self.infoTracker)
+            arrow.set_attributes(attributes)
+            arrow.setFlag(QGraphicsItem.ItemIsMovable, True)
+            arrow.setFlag(QGraphicsItem.ItemIsSelectable, True)
+            arrow.setScale(self.SVG_SCALE)
+            # Position the arrow in the center of its quadrant
+            arrow.setPos(self.getQuadrantCenter(attributes['quadrant']))
+            self.artboard.addItem(arrow)
+
+        # Update the info label
+        self.infoTracker.update()
+
+    def getQuadrantCenter(self, quadrant):
+        # Define the centers of the quadrants
+        centers = {
+            'ne': QPointF(525, 175),
+            'se': QPointF(525, 525),
+            'sw': QPointF(175, 525),
+            'nw': QPointF(175, 175),
+        }
+        return centers.get(quadrant, QPointF(0, 0))
+    
     def loadLetters(self):
         try:
             with open('letterCombinations.json', 'r') as f:
