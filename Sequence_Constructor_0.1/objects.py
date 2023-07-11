@@ -114,13 +114,13 @@ class Arrow(QGraphicsSvgItem):
             base_name = os.path.basename(self.svg_file)
 
             if base_name.startswith('red_anti'):
-                new_svg = f'images\\arrows\\red\\{self.orientation}\\anti\\red_anti_{self.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\red_anti_{self.orientation}_{quadrant}.svg'
             elif base_name.startswith('red_iso'):
-                new_svg = f'images\\arrows\\red\\{self.orientation}\\iso\\red_iso_{self.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\red_iso_{self.orientation}_{quadrant}.svg'
             elif base_name.startswith('blue_anti'):
-                new_svg = f'images\\arrows\\blue\\{self.orientation}\\anti\\blue_anti_{self.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\blue_anti_{self.orientation}_{quadrant}.svg'
             elif base_name.startswith('blue_iso'):
-                new_svg = f'images\\arrows\\blue\\{self.orientation}\\iso\\blue_iso_{self.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\blue_iso_{self.orientation}_{quadrant}.svg'
             else:
                 print(f"Unexpected svg_file: {self.svg_file}")
                 new_svg = self.svg_file
@@ -143,6 +143,10 @@ class Arrow(QGraphicsSvgItem):
         self.dragged_item = None 
         from main import Info_Tracker
         infoTracker = Info_Tracker()
+        #update all the attributes
+        self.update_positions()
+
+
         infoTracker.update() 
         self.arrowMoved.emit()  # emit the signal when the arrow is dropped
 
@@ -254,3 +258,65 @@ class Arrow(QGraphicsSvgItem):
                 self.quadrant = "nw"
             else:
                 self.quadrant = "sw"
+
+    def set_attributes(self, attributes):
+        self.color = attributes.get('color', self.color)
+        self.quadrant = attributes.get('quadrant', self.quadrant)
+        self.rotation = attributes.get('rotation', self.rotation)
+        self.type = attributes.get('type', self.type)
+        self.start_position = attributes.get('start_position', self.start_position)
+        self.end_position = attributes.get('end_position', self.end_position)
+
+    #fuction to update the start and end points of the arrow in the infotracker
+    def update_positions(self):
+        # Update the start and end positions
+        self.start_position, self.end_position = self.arrow_positions.get(os.path.basename(self.svg_file), (None, None))
+        self.arrowMoved.emit()
+
+
+    def update_rotation(self):
+        if self.type == "iso":
+            if self.start_position == "n":
+                if self.end_position == "e":
+                    self.rotation = "r"
+                else: # self.end_position == "w"
+                    self.rotation = "l"
+            elif self.start_position == "s":
+                if self.end_position == "e":
+                    self.rotation = "l"
+                else: # self.end_position == "w"
+                    self.rotation = "r"
+            elif self.start_position == "e":
+                if self.end_position == "n":
+                    self.rotation = "l"
+                else: # self.end_position == "s"
+                    self.rotation = "r"
+            elif self.start_position == "w":
+                if self.end_position == "n":
+                    self.rotation = "r"
+                else:  # self.end_position == "s"
+                    self.rotation = "l"
+        else:  # self.type == "anti"
+            if self.start_position == "n":
+                if self.end_position == "e":
+                    self.rotation = "l"
+                else: # self.end_position == "w"
+                    self.rotation = "r"
+            elif self.start_position == "s":
+                if self.end_position == "e":
+                    self.rotation = "r"
+                else: # self.end_position == "w"
+                    self.rotation = "l"
+            elif self.start_position == "e":
+                if self.end_position == "n":
+                    self.rotation = "r"
+                else: # self.end_position == "s"
+                    self.rotation = "l"
+            elif self.start_position == "w":
+                if self.end_position == "n":
+                    self.rotation = "l"
+                else: # self.end_position == "s"
+                    self.rotation = "r"
+
+
+                

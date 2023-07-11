@@ -36,6 +36,9 @@ class Main_Window(QWidget):
         self.setGeometry(300, 300, 1200, 1400)  
         self.infoTracker = Info_Tracker(self.artboard, self.label)
         self.initWordConstructor(main_layout)
+
+        self.grid = Grid('images\\grid\\grid.svg')
+        self.artboard_view = Artboard(self.artboard, self.grid, self.infoTracker)
         self.view = self.initArtboard() 
         self.view.arrowMoved.connect(self.infoTracker.update)  # connect the signal to the update method
         arrowbox = self.initArrowBox()
@@ -49,16 +52,15 @@ class Main_Window(QWidget):
         right_layout.addWidget(self.view)
         button_layout = self.initButtons()  
         right_layout.addLayout(button_layout)
-        # Add a text input field for entering a letter
-        self.letterInput = QLineEdit(self)
-        right_layout.addWidget(self.letterInput)
 
-        # Add a button for assigning the entered letter to the selected combination of arrows
-        self.assignLetterButton = QPushButton("Assign Letter", self)
-        self.assignLetterButton.clicked.connect(self.assignLetter)
-        right_layout.addWidget(self.assignLetterButton)
-        self.checkbox_manager = Checkbox_Manager(self.view, self.grid)
-        right_layout.addWidget(self.checkbox_manager.getCheckbox())
+        # self.letterInput = QLineEdit(self)
+        # right_layout.addWidget(self.letterInput)
+        # self.assignLetterButton = QPushButton("Assign Letter", self)
+        # self.assignLetterButton.clicked.connect(self.assignLetter)
+        # right_layout.addWidget(self.assignLetterButton)
+        
+        # self.checkbox_manager = Checkbox_Manager(self.view, self.grid)
+        # right_layout.addWidget(self.checkbox_manager.getCheckbox())
 
         right_layout.addWidget(self.label)  # add the label to the layout
 
@@ -103,18 +105,22 @@ class Main_Window(QWidget):
             print(f"No combinations found for letter {letter}")
             return
 
+        #if there are already two objects on the screen, call the self.artboard_view.deleteAllArrows() function
+        if len(self.artboard.items()) > 1:
+            self.artboard_view.deleteAllArrows()
+        
+
         # Choose a combination at random
-        combination = random.choice(combinations)
-        attributes = self.letterCombinations[letter]
-        for combination in combinations:
-            svg = f"images/arrows/{combination['color']}_{combination['type']}_{combination['rotation']}__{combination['quadrant']}.svg"
+        combination_set = random.choice(combinations)
+        for combination in combination_set:
+            svg = f"images/arrows/{combination['color']}_{combination['type']}_{combination['rotation']}_{combination['quadrant']}.svg"
             arrow = Arrow(svg, self.view, self.infoTracker)
-            arrow.set_attributes(attributes)
+            arrow.set_attributes(combination)
             arrow.setFlag(QGraphicsItem.ItemIsMovable, True)
             arrow.setFlag(QGraphicsItem.ItemIsSelectable, True)
             arrow.setScale(self.SVG_SCALE)
-            # Position the arrow in the center of its quadrant
-            arrow.setPos(self.getQuadrantCenter(attributes['quadrant']))
+            # call the delete all arrows function
+            arrow.setPos(self.getQuadrantCenter(combination['quadrant']))
             self.artboard.addItem(arrow)
 
         # Update the info label
@@ -137,35 +143,35 @@ class Main_Window(QWidget):
         except FileNotFoundError:
             return {}
 
-    def saveLetters(self):
-        with open('letterCombinations.json', 'w') as f:
-            json.dump(self.letterCombinations, f)
+    # def saveLetters(self):
+    #     with open('letterCombinations.json', 'w') as f:
+    #         json.dump(self.letterCombinations, f)
 
-    def assignLetter(self):
-        letter = self.letterInput.text().upper()
-        if letter not in positions:
-            print(f"{letter} is not a valid letter.")
-            return
-        selected_items = self.artboard.selectedItems()
-        if len(selected_items) != 2 or not all(isinstance(item, Arrow) for item in selected_items):
-            print("Please select a combination of two arrows.")
-            return
-        letter_instance = Letter(selected_items[0], selected_items[1])
-        letter_instance.assign_letter(letter)
+    # def assignLetter(self):
+    #     letter = self.letterInput.text().upper()
+    #     if letter not in positions:
+    #         print(f"{letter} is not a valid letter.")
+    #         return
+    #     selected_items = self.artboard.selectedItems()
+    #     if len(selected_items) != 2 or not all(isinstance(item, Arrow) for item in selected_items):
+    #         print("Please select a combination of two arrows.")
+    #         return
+    #     letter_instance = Letter(selected_items[0], selected_items[1])
+    #     letter_instance.assign_letter(letter)
 
-        arrow_combination = [item.get_attributes() for item in selected_items]
-        variations = generate_variations(arrow_combination)
-        print(f"Generated {len(variations)} variations for the selected combination of arrows.")
-        print(f"{variations}")
-        if letter not in self.letterCombinations:
-            self.letterCombinations[letter] = []
-        for variation in variations:
-            self.letterCombinations[letter].append(variation)
+    #     arrow_combination = [item.get_attributes() for item in selected_items]
+    #     variations = generate_variations(arrow_combination)
+    #     print(f"Generated {len(variations)} variations for the selected combination of arrows.")
+    #     print(f"{variations}")
+    #     if letter not in self.letterCombinations:
+    #         self.letterCombinations[letter] = []
+    #     for variation in variations:
+    #         self.letterCombinations[letter].append(variation)
 
-        self.saveLetters()
+    #     self.saveLetters()
 
-        print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
-        self.infoTracker.update()
+    #     print(f"Assigned {letter} to the selected combination of arrows and all its variations.")
+    #     self.infoTracker.update()
 
     def loadSvg(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open SVG", "", "SVG files (*.svg)")
@@ -206,18 +212,17 @@ class Main_Window(QWidget):
     def initArtboard(self):
         grid_size = 650
         
-        self.grid = Grid('images\\grid\\grid.svg')
-        artboard_view = Artboard(self.artboard, self.grid, self.infoTracker)
-        artboard_view.setFixedSize(700, 700)
+
+        self.artboard_view.setFixedSize(700, 700)
 
         transform = QTransform()
-        self.grid_center = QPointF(artboard_view.frameSize().width() / 2, artboard_view.frameSize().height() / 2)
+        self.grid_center = QPointF(self.artboard_view.frameSize().width() / 2, self.artboard_view.frameSize().height() / 2)
 
         transform.translate(self.grid_center.x() - (grid_size / 2), self.grid_center.y() - (grid_size / 2))
         self.grid.setTransform(transform)
 
-        artboard_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        artboard_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.artboard_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.artboard_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.artboard.addItem(self.grid)
 
@@ -227,7 +232,7 @@ class Main_Window(QWidget):
         self.artboard.changed.connect(self.infoTracker.update)
 
 
-        return artboard_view
+        return self.artboard_view
 
     def initButtons(self):
         handlers = Button_Handlers(self.artboard, self.view, self.grid, self.artboard, self)
@@ -343,7 +348,6 @@ class Checkbox_Manager():
 
         # Update the Grid object with the new SVG content
         self.grid.updateSvgContent(self.grid_renderer)
-
 
 class Info_Tracker:
     def __init__(self, artboard, label):
@@ -467,7 +471,6 @@ class Info_Tracker:
 
 
         self.label.setText("<table><tr><td width=300>" + blue_text + "</td><td width=300>" + red_text + "</td><td width=100>" + letter_text + "</td></tr></table>")
-
 
 class Letter:
     def __init__(self, arrow1, arrow2):

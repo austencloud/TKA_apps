@@ -102,18 +102,19 @@ class Artboard(QGraphicsView):
             base_name = os.path.basename(self.arrow_item.svg_file)
 
             if base_name.startswith('red_anti'):
-                new_svg = f'images\\arrows\\red\\{self.arrow_item.orientation}\\anti\\red_anti_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\red_anti_{self.arrow_item.orientation}_{quadrant}.svg'
             elif base_name.startswith('red_iso'):
-                new_svg = f'images\\arrows\\red\\{self.arrow_item.orientation}\\iso\\red_iso_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\red_iso_{self.arrow_item.orientation}_{quadrant}.svg'
             elif base_name.startswith('blue_anti'):
-                new_svg = f'images\\arrows\\blue\\{self.arrow_item.orientation}\\anti\\blue_anti_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\blue_anti_{self.arrow_item.orientation}_{quadrant}.svg'
             elif base_name.startswith('blue_iso'):
-                new_svg = f'images\\arrows\\blue\\{self.arrow_item.orientation}\\iso\\blue_iso_{self.arrow_item.orientation}_{quadrant}.svg'
+                new_svg = f'images\\arrows\\blue_iso_{self.arrow_item.orientation}_{quadrant}.svg'
             else:
                 print(f"Unexpected svg_file: {self.arrow_item.svg_file}")
                 new_svg = self.arrow_item.svg_file
                 self.arrowMoved.emit()  # emit the signal after the quadrant of the arrow is updated
-
+                Arrow.update_positions()
+                
             new_renderer = QSvgRenderer(new_svg)
 
             if new_renderer.isValid():
@@ -181,13 +182,13 @@ class Artboard(QGraphicsView):
                     base_name = os.path.basename(item.svg_file)
 
                     if base_name.startswith('red_anti'):
-                        new_svg = f'images\\arrows\\red\\{item.rotation}\\anti\\red_anti_{item.rotation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\red_anti_{item.rotation}_{quadrant}.svg'
                     elif base_name.startswith('red_iso'):
-                        new_svg = f'images\\arrows\\red\\{item.rotation}\\iso\\red_iso_{item.rotation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\red_iso_{item.rotation}_{quadrant}.svg'
                     elif base_name.startswith('blue_anti'):
-                        new_svg = f'images\\arrows\\blue\\{item.rotation}\\anti\\blue_anti_{item.rotation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\blue_anti_{item.rotation}_{quadrant}.svg'
                     elif base_name.startswith('blue_iso'):
-                        new_svg = f'images\\arrows\\blue\\{item.rotation}\\iso\\blue_iso_{item.rotation}_{quadrant}.svg'
+                        new_svg = f'images\\arrows\\blue_iso_{item.rotation}_{quadrant}.svg'
                     else:
                         print(f"Unexpected svg_file: {item.svg_file}")
                         new_svg = item.svg_file 
@@ -220,10 +221,15 @@ class Artboard(QGraphicsView):
 
         super().mouseReleaseEvent(event)
 
-
-
-
-
+    #add a new mthod which deletes all arrows on the artboard
+    def deleteAllArrows(self):
+        for item in self.scene().items():
+            if isinstance(item, Arrow):
+                self.scene().removeItem(item)
+                del item
+        self.arrowMoved.emit()
+        self.infoTracker.update()
+        
 class Update_Quadrant_Preview(QDrag):
     def __init__(self, source, arrow_item, *args, **kwargs):
         super().__init__(source, *args, **kwargs)
